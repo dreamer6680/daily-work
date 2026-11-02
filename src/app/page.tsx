@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import DailyPlanPanel from "@/components/daily-plan-panel";
 import {
   AlertCircle,
   CalendarDays,
@@ -433,6 +434,8 @@ export default function Home() {
               {error}
             </div>
           )}
+
+          <DailyPlanPanel todos={todos} />
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1 border-b border-slate-200">
