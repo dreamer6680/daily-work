@@ -4,7 +4,7 @@ import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
-const datePattern = /^\\d{4}-\\d{2}-\\d{2}$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 function parseDate(value: string) {
   if (!datePattern.test(value)) return null;
   const date = new Date(value + "T00:00:00.000Z");
