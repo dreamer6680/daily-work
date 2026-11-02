@@ -208,7 +208,7 @@ export default function Home() {
     setProgressSaving(true);
     setError("");
     try {
-      const response = await fetch(`/api/todos/${detail.id}`, {
+      const response = await fetch(`/api/todos/${detail.id}/progress`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ progressTitle, progressNote }),
