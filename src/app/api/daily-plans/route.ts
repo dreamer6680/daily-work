@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const planDate = parseDate(value);
     if (!planDate) return NextResponse.json({ error: "日期无效" }, { status: 400 });
     const data = await prisma.todoDailyPlan.findMany({
-      where: { workspaceId: workspace.id, planDate },
+      where: { workspaceId: workspace.id, planDate, todo: { deletedAt: null } },
       include: { todo: { select: { id: true, title: true, status: true, project: { select: { name: true } } } } },
       orderBy: { createdAt: "asc" }
     });
