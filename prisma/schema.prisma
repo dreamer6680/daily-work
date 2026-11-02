@@ -226,6 +226,8 @@ model TodoDailyPlan {
   todoId      String @map("todo_id") @db.Uuid
 
   planDate       DateTime @map("plan_date") @db.Date
+  planNote       String?  @map("plan_note") @db.Text
+  actualNote     String?  @map("actual_note") @db.Text
   dayNote        String?  @map("day_note") @db.Text
   plannedMinutes Int?     @map("planned_minutes")
   actualMinutes  Int?     @map("actual_minutes")
