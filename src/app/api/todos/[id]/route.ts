@@ -16,7 +16,99 @@ const updateTodoSchema = z.object({
   currentProgressNote: z.string().max(10000).optional().nullable(),
 });
 
+const progressSchema = z.object({
+  progressTitle: z.string().trim().max(200).optional().nullable(),
+  progressNote: z.string().trim().max(10000).optional().nullable(),
+}).refine(
+  (value) => Boolean(value.progressTitle?.trim() || value.progressNote?.trim()),
+  { message: "请填写进展标题或进展说明" },
+);
+
 type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(_request: NextRequest, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+    const { workspace } = await getDemoContext();
+    const todo = await prisma.todo.findFirst({
+      where: { id, workspaceId: workspace.id, deletedAt: null },
+      include: {
+        project: { select: { id: true, name: true, color: true } },
+        progressLogs: {
+          orderBy: { createdAt: "desc" },
+          take: 100,
+          include: { author: { select: { id: true, name: true, email: true } } },
+        },
+      },
+    });
+
+    if (!todo) {
+      return NextResponse.json({ error: "待办不存在" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: todo });
+  } catch (error) {
+    console.error("[GET /api/todos/:id]", error);
+    return NextResponse.json({ error: "读取待办详情失败" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+    const parsed = progressSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? "请求参数不正确" },
+        { status: 400 },
+      );
+    }
+
+    const { user, workspace } = await getDemoContext();
+    const existing = await prisma.todo.findFirst({
+      where: { id, workspaceId: workspace.id, deletedAt: null },
+      select: { id: true, status: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "待办不存在" }, { status: 404 });
+    }
+
+    const progressTitle = parsed.data.progressTitle?.trim() || null;
+    const progressNote = parsed.data.progressNote?.trim() || null;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const todo = await tx.todo.update({
+        where: { id },
+        data: {
+          currentProgressTitle: progressTitle,
+          currentProgressNote: progressNote,
+          updatedById: user.id,
+        },
+      });
+
+      const log = await tx.todoProgressLog.create({
+        data: {
+          workspaceId: workspace.id,
+          todoId: id,
+          authorId: user.id,
+          eventType: ProgressEventType.PROGRESS_UPDATED,
+          fromStatus: existing.status,
+          toStatus: todo.status,
+          progressTitle,
+          progressNote,
+        },
+        include: { author: { select: { id: true, name: true, email: true } } },
+      });
+
+      return { todo, log };
+    });
+
+    return NextResponse.json({ data: result }, { status: 201 });
+  } catch (error) {
+    console.error("[POST /api/todos/:id progress]", error);
+    return NextResponse.json({ error: "保存进展失败" }, { status: 500 });
+  }
+}
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
