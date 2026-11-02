@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: daily-work-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: daily_work
+      POSTGRES_USER: daily_work
+      POSTGRES_PASSWORD: daily_work_local
+      TZ: Asia/Taipei
+    ports:
+      - "5433:5432"
+    volumes:
+      - daily_work_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U daily_work -d daily_work"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  daily_work_pgdata:
