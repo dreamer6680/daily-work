@@ -27,7 +27,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { user, workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
+    if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能更新进展" }, { status: 403 });
     const existing = await prisma.todo.findFirst({
       where: { id, workspaceId: workspace.id, deletedAt: null },
       select: { id: true, status: true },
