@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DailyPlanPanel from "@/components/daily-plan-panel";
 import WorkspaceControls from "@/components/workspace-controls";
 import {
   AlertCircle,
   CalendarDays,
-  Check,
   CheckCircle2,
   CircleHelp,
   Clock3,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import TodoTable from "@/components/todos/todo-table";
 import AssigneeMentionPicker from "@/components/todos/assignee-mention-picker";
+import NavItem from "@/components/nav-item";
 import { EMPTY_FORM, PRIORITY_LABEL, STATUS_META } from "@/lib/todo-constants";
 import { formatUpdatedAt, memberInitial, memberLabel } from "@/lib/todo-utils";
 import type { Todo, TodoDetail, TodoForm, TodoStatus, Project, ProgressLog, WorkspaceMember } from "@/types/todo";
@@ -421,8 +421,6 @@ export default function Home() {
             members={members}
             loading={loading}
             readOnly={readOnly}
-            keyword={keyword}
-            onKeywordChange={setKeyword}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             assigneeFilter={assigneeFilter}
