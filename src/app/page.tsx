@@ -9,8 +9,7 @@ import { Plus } from "lucide-react";
 import TodoTable from "@/components/todos/todo-table";
 import TodoDetailDrawer from "@/components/todos/todo-detail-drawer";
 import TodoComposerModal from "@/components/todos/todo-composer-modal";
-import { EMPTY_FORM, PRIORITY_LABEL, STATUS_META } from "@/lib/todo-constants";
-import { formatUpdatedAt } from "@/lib/todo-utils";
+import { EMPTY_FORM } from "@/lib/todo-constants";
 import type { Todo, TodoDetail, TodoForm, TodoStatus, Project, WorkspaceMember } from "@/types/todo";
 
 
