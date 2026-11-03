@@ -16,6 +16,7 @@ export default function WorkspaceControls() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [currentRole, setCurrentRole] = useState<Workspace["role"]>("VIEWER");
+  const [currentUserId, setCurrentUserId] = useState("");
   const [email, setEmail] = useState("");
   const [addRole, setAddRole] = useState<"ADMIN" | "MEMBER" | "VIEWER">("MEMBER");
   const [busy, setBusy] = useState(false);
@@ -36,6 +37,7 @@ export default function WorkspaceControls() {
     if (!response.ok) throw new Error(result.error || "读取成员失败");
     setMembers(result.data.members);
     setCurrentRole(result.data.currentRole);
+    setCurrentUserId(result.data.currentUserId);
   }
 
   useEffect(() => {
@@ -190,8 +192,7 @@ export default function WorkspaceControls() {
             <div className="mb-2 text-sm font-medium">成员列表（{members.length}）</div>
             <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
               {members.map((member) => {
-                const protectedMember = member.role === "OWNER" || member.id === members.find((item) => item.role === "OWNER")?.id;
-                const canEdit = canManage && !protectedMember && member.id !== members.find((item) => item.id === member.id && item.role === currentRole)?.id;
+                const canEdit = canManage && member.role !== "OWNER" && member.id !== currentUserId && (currentRole === "OWNER" || member.role !== "ADMIN");
                 const canRemove = canManage && member.role !== "OWNER" && !(currentRole === "ADMIN" && member.role === "ADMIN");
                 return <div key={member.id} className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium text-slate-700">{member.name || "未设置姓名"}{member.role === "OWNER" && <span className="ml-2 text-xs text-slate-400">工作空间所有者</span>}</div><div className="truncate text-xs text-slate-400">{member.email}</div></div>
