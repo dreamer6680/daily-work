@@ -19,8 +19,6 @@ type TodoTableProps = {
   members: WorkspaceMember[];
   loading: boolean;
   readOnly: boolean;
-  keyword: string;
-  onKeywordChange: (value: string) => void;
   statusFilter: "ALL" | TodoStatus;
   onStatusFilterChange: (value: "ALL" | TodoStatus) => void;
   assigneeFilter: string;
@@ -41,7 +39,7 @@ type TodoTableProps = {
 
 export default function TodoTable({
   todos, visibleTodos, members, loading, readOnly,
-  keyword, onKeywordChange, statusFilter, onStatusFilterChange,
+  statusFilter, onStatusFilterChange,
   assigneeFilter, onAssigneeFilterChange, onRefresh,
   onOpenDetails, onOpenEdit, onDelete, onChangeStatus,
   editingAssigneesTodoId, assigneeDraftIds, onAssigneeDraftChange,
@@ -60,7 +58,7 @@ export default function TodoTable({
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500 shadow-sm">
                   <Users size={14} />
-                  <select aria-label="按成员筛选" value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="max-w-36 bg-transparent text-sm text-slate-700 outline-none">
+                  <select aria-label="按成员筛选" value={assigneeFilter} onChange={(event) => onAssigneeFilterChange(event.target.value)} className="max-w-36 bg-transparent text-sm text-slate-700 outline-none">
                     <option value="ALL">全部成员</option>
                     <option value="UNASSIGNED">未分配</option>
                     {members.map((member) => <option key={member.id} value={member.id}>{memberLabel(member)}</option>)}
@@ -68,7 +66,7 @@ export default function TodoTable({
                 </label>
                 <select
                   value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value as "ALL" | TodoStatus)}
+                  onChange={(event) => onStatusFilterChange(event.target.value as "ALL" | TodoStatus)}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-indigo-300"
                 >
                   <option value="ALL">全部状态</option>
@@ -76,7 +74,7 @@ export default function TodoTable({
                     <option key={value} value={value}>{meta.label}</option>
                   ))}
                 </select>
-                <button onClick={() => void loadData()} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm transition hover:bg-slate-50">
+                <button onClick={onRefresh} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm transition hover:bg-slate-50">
                   刷新
                 </button>
               </div>
@@ -106,7 +104,7 @@ export default function TodoTable({
                     visibleTodos.map((todo) => (
                       <tr key={todo.id} className="group hover:bg-slate-50">
                         <td className="border-b border-r border-slate-100 px-3 py-3 font-medium text-slate-800">
-                          <button onClick={() => void openDetails(todo)} className="text-left hover:text-blue-700 hover:underline">{todo.title}</button>
+                          <button onClick={() => onOpenDetails(todo)} className="text-left hover:text-blue-700 hover:underline">{todo.title}</button>
                           {todo.description && <div className="mt-1 max-w-56 truncate text-xs font-normal text-slate-400">{todo.description}</div>}
                         </td>
                         <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-500">
@@ -125,7 +123,7 @@ export default function TodoTable({
                               <div className="flex justify-end gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => { setEditingAssigneesTodoId(null); setAssigneeDraftIds([]); }}
+                                  onClick={onCancelAssigneeEdit}
                                   disabled={assigneeSavingTodoId === todo.id}
                                   className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-50"
                                 >
@@ -194,10 +192,10 @@ export default function TodoTable({
                         </td>
                         <td className="border-b border-slate-100 px-3 py-3">
                           <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100">
-                            <button onClick={() => void openDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => openEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
+                            <button onClick={() => void openDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => onOpenEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
                               <Pencil size={15} />
                             </button>
-                            <button onClick={() => void deleteTodo(todo)} disabled={readOnly} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
+                            <button onClick={() => onDelete(todo)} disabled={readOnly} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
                               <Trash2 size={15} />
                             </button>
                           </div>
