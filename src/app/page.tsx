@@ -207,6 +207,7 @@ function AssigneeMentionPicker({
         ))}
         <input
           ref={inputRef}
+          autoFocus={compact}
           value={inputValue}
           disabled={disabled}
           onChange={(event) => {
@@ -226,7 +227,7 @@ function AssigneeMentionPicker({
         )}
       </div>
       {open && query !== null && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+        <div className={compact ? "relative z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-xl" : "absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-xl"}>
           {candidates.length ? candidates.map((member, index) => (
             <button
               key={member.id}
