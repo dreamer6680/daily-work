@@ -116,7 +116,7 @@ export default function TodoTable({
                               <AssigneeMentionPicker
                                 members={members}
                                 selectedIds={assigneeDraftIds}
-                                onChange={setAssigneeDraftIds}
+                                onChange={onAssigneeDraftChange}
                                 disabled={readOnly || assigneeSavingTodoId === todo.id}
                                 compact
                               />
@@ -172,7 +172,7 @@ export default function TodoTable({
                           <select
                             value={todo.status}
                             disabled={readOnly}
-                            onChange={(event) => void changeStatus(todo, event.target.value as TodoStatus)}
+                            onChange={(event) => onChangeStatus(todo, event.target.value as TodoStatus)
                             className={`rounded px-2 py-1 text-xs outline-none ${STATUS_META[todo.status].className}`}
                           >
                             {Object.entries(STATUS_META).map(([value, meta]) => (
@@ -192,7 +192,7 @@ export default function TodoTable({
                         </td>
                         <td className="border-b border-slate-100 px-3 py-3">
                           <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100">
-                            <button onClick={() => void openDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => onOpenEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
+                            <button onClick={() => onOpenDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => onOpenEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
                               <Pencil size={15} />
                             </button>
                             <button onClick={() => onDelete(todo)} disabled={readOnly} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
