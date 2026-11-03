@@ -2,23 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DailyPlanPanel from "@/components/daily-plan-panel";
-import WorkspaceControls from "@/components/workspace-controls";
+import WorkspaceSidebar from "@/components/workspace-sidebar";
+import HomeHeader from "@/components/home-header";
+import TodoStats from "@/components/todos/todo-stats";
 import {
-  AlertCircle,
-  CalendarDays,
-  CheckCircle2,
-  CircleHelp,
   Clock3,
-  FolderKanban,
-  Inbox,
-  LogOut,
   Plus,
-  Search,
 } from "lucide-react";
 import TodoTable from "@/components/todos/todo-table";
 import TodoDetailDrawer from "@/components/todos/todo-detail-drawer";
 import TodoComposerModal from "@/components/todos/todo-composer-modal";
-import NavItem from "@/components/nav-item";
 import { EMPTY_FORM, PRIORITY_LABEL, STATUS_META } from "@/lib/todo-constants";
 import { formatUpdatedAt } from "@/lib/todo-utils";
 import type { Todo, TodoDetail, TodoForm, TodoStatus, Project, WorkspaceMember } from "@/types/todo";
@@ -300,74 +293,10 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen bg-white text-slate-800">
-      <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-[#fafafa] p-3 md:block">
-        <div className="mb-7 flex items-center gap-2 px-2 pt-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white">
-            D
-          </div>
-          <div>
-            <div className="text-sm font-semibold">Daily Work</div>
-            <div className="text-xs text-slate-400">开发工作台</div>
-          </div>
-
-        </div>
-
-        <WorkspaceControls />
-        <nav className="space-y-1">
-          <NavItem icon={Inbox} label="全部任务" />
-          <NavItem icon={CalendarDays} label="今日待办" active />
-          <NavItem icon={Users} label="我负责的" />
-          <NavItem icon={Clock3} label="最近更新" />
-          <NavItem icon={AlertCircle} label="阻塞任务" />
-        </nav>
-
-        <div className="mb-2 mt-8 flex items-center justify-between px-3 text-xs font-medium text-slate-400">
-          <span>项目</span>
-          <Plus size={14} />
-        </div>
-        <nav className="space-y-1">
-          {projects.map((project) => (
-            <div key={project.id} className="flex h-9 items-center gap-2 rounded-md px-3 text-sm text-slate-600">
-              <FolderKanban size={16} strokeWidth={1.8} />
-              <span className="truncate">{project.name}</span>
-            </div>
-          ))}
-        </nav>
-
-        <div className="mb-2 mt-8 px-3 text-xs font-medium text-slate-400">管理</div>
-        <nav className="space-y-1">
-          <NavItem icon={CircleHelp} label="问题管理" />
-
-        </nav>
-      </aside>
+      <WorkspaceSidebar projects={projects} />
 
       <section className="min-w-0 flex-1">
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 px-5">
-          <div className="text-sm text-slate-500">
-            工作空间 <span className="px-1">/</span>
-            <span className="font-medium text-slate-800">今日待办</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
-              <input
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="搜索任务或进展"
-                className="h-9 w-56 rounded-md border border-slate-200 pl-9 pr-3 text-xs outline-none focus:border-blue-400"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              disabled={logoutLoading}
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-            >
-              <LogOut size={14} />
-              {logoutLoading ? "退出中..." : "退出登录"}
-            </button>
-          </div>
-        </header>
+        <HomeHeader keyword={keyword} onKeywordChange={setKeyword} logoutLoading={logoutLoading} onLogout={() => void handleLogout()} />
 
         <div className="p-5 md:p-8">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -387,25 +316,7 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {[
-              ["全部任务", stats.total, CalendarDays],
-              ["进行中", stats.inProgress, Clock3],
-              ["已完成", stats.done, CheckCircle2],
-              ["已暂停", stats.paused, AlertCircle],
-            ].map(([label, value, Icon]) => {
-              const CardIcon = Icon as typeof CalendarDays;
-              return (
-                <div key={label as string} className="rounded-lg border border-slate-200 p-4">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    {label as string}
-                    <CardIcon size={15} />
-                  </div>
-                  <div className="mt-2 text-2xl font-semibold">{value as number}</div>
-                </div>
-              );
-            })}
-          </div>
+          <TodoStats stats={stats} />
 
           {error && (
             <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
