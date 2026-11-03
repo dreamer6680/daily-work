@@ -14,6 +14,7 @@ const createTodoSchema = z.object({
   priority: z.nativeEnum(Priority).optional(),
   currentProgressTitle: z.string().max(200).optional().nullable(),
   currentProgressNote: z.string().max(10000).optional().nullable(),
+  assigneeIds: z.array(z.string().uuid()).max(50).optional(),
 });
 
 export async function GET() {
@@ -21,7 +22,7 @@ export async function GET() {
     const { workspace } = await getDemoContext();
     const todos = await prisma.todo.findMany({
       where: { workspaceId: workspace.id, deletedAt: null },
-      include: { project: { select: { id: true, name: true, color: true } } },
+      include: { project: { select: { id: true, name: true, color: true } }, assignees: { include: { user: { select: { id: true, name: true, email: true } } } } },
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json({ data: todos });
@@ -48,6 +49,11 @@ export async function POST(request: NextRequest) {
     const { user, workspace, role } = await getDemoContext();
     if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能修改待办" }, { status: 403 });
     const input = parsed.data;
+    const assigneeIds = [...new Set(input.assigneeIds ?? [])];
+    if (assigneeIds.length) {
+      const validMembers = await prisma.workspaceMember.count({ where: { workspaceId: workspace.id, userId: { in: assigneeIds } } });
+      if (validMembers !== assigneeIds.length) return NextResponse.json({ error: "负责人必须是当前工作空间成员" }, { status: 400 });
+    }
 
     if (input.projectId) {
       const project = await prisma.project.findFirst({
@@ -76,6 +82,10 @@ export async function POST(request: NextRequest) {
         include: { project: { select: { id: true, name: true, color: true } } },
       });
 
+      if (assigneeIds.length) {
+        await tx.todoAssignee.createMany({ data: assigneeIds.map((userId) => ({ todoId: created.id, userId, assignedById: user.id })) });
+      }
+
       await tx.todoProgressLog.create({
         data: {
           workspaceId: workspace.id,
@@ -89,7 +99,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return created;
+      return tx.todo.findUniqueOrThrow({ where: { id: created.id }, include: { project: { select: { id: true, name: true, color: true } }, assignees: { include: { user: { select: { id: true, name: true, email: true } } } } } });
     });
 
     return NextResponse.json({ data: todo }, { status: 201 });
