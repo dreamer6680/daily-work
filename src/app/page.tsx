@@ -25,6 +25,8 @@ type TodoStatus = "TODO" | "IN_PROGRESS" | "PAUSED" | "DONE" | "CANCELED";
 type Priority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 type Project = { id: string; name: string; color: string | null };
+type WorkspaceMember = { id: string; name: string | null; email: string | null; role: string };
+type TodoAssignee = { user: { id: string; name: string | null; email: string | null } };
 type Todo = {
   id: string;
   title: string;
@@ -35,6 +37,7 @@ type Todo = {
   currentProgressNote: string | null;
   updatedAt: string;
   project: Project | null;
+  assignees: TodoAssignee[];
 };
 
 type ProgressLog = {
@@ -58,6 +61,7 @@ type TodoForm = {
   priority: Priority;
   currentProgressTitle: string;
   currentProgressNote: string;
+  assigneeIds: string[];
 };
 
 const EMPTY_FORM: TodoForm = {
@@ -68,6 +72,7 @@ const EMPTY_FORM: TodoForm = {
   priority: "NORMAL",
   currentProgressTitle: "",
   currentProgressNote: "",
+  assigneeIds: [],
 };
 
 const STATUS_META: Record<TodoStatus, { label: string; className: string }> = {
@@ -120,6 +125,7 @@ function formatUpdatedAt(value: string) {
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -140,26 +146,30 @@ export default function Home() {
     setLoading(true);
     setError("");
     try {
-      const [todoResponse, projectResponse, meResponse] = await Promise.all([
+      const [todoResponse, projectResponse, meResponse, membersResponse] = await Promise.all([
         fetch("/api/todos", { cache: "no-store" }),
         fetch("/api/projects", { cache: "no-store" }),
         fetch("/api/auth/me", { cache: "no-store" }),
+        fetch("/api/workspaces/members", { cache: "no-store" }),
       ]);
       if (todoResponse.status === 401 || projectResponse.status === 401 || meResponse.status === 401) {
         window.location.assign("/login");
         return;
       }
-      const [todoJson, projectJson, meJson] = await Promise.all([
+      const [todoJson, projectJson, meJson, membersJson] = await Promise.all([
         todoResponse.json(),
         projectResponse.json(),
         meResponse.json(),
+        membersResponse.json(),
       ]);
       if (!todoResponse.ok) throw new Error(todoJson.error ?? "读取待办失败");
       if (!projectResponse.ok) throw new Error(projectJson.error ?? "读取项目失败");
       if (!meResponse.ok) throw new Error(meJson.error ?? "读取用户信息失败");
+      if (!membersResponse.ok) throw new Error(membersJson.error ?? "读取工作空间成员失败");
       setReadOnly(meJson.data.role === "VIEWER");
       setTodos(todoJson.data);
       setProjects(projectJson.data);
+      setMembers(membersJson.data.members);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "加载失败，请稍后重试");
     } finally {
@@ -279,6 +289,7 @@ export default function Home() {
       priority: todo.priority,
       currentProgressTitle: todo.currentProgressTitle ?? "",
       currentProgressNote: todo.currentProgressNote ?? "",
+      assigneeIds: todo.assignees.map((item) => item.user.id),
     });
     setComposerOpen(true);
     setError("");
@@ -306,6 +317,7 @@ export default function Home() {
             description: form.description || null,
             currentProgressTitle: form.currentProgressTitle || null,
             currentProgressNote: form.currentProgressNote || null,
+            assigneeIds: form.assigneeIds,
           }),
         },
       );
@@ -497,7 +509,7 @@ export default function Home() {
             <table className="w-full min-w-[900px] border-collapse text-left text-sm">
               <thead className="bg-slate-50 text-xs text-slate-500">
                 <tr>
-                  {["任务名称", "项目", "状态", "当前进展", "优先级", "更新时间", "操作"].map((head) => (
+                  {["任务名称", "项目", "负责人", "状态", "当前进展", "优先级", "更新时间", "操作"].map((head) => (
                     <th key={head} className="border-b border-r border-slate-200 px-3 py-3 font-medium last:border-r-0">
                       {head}
                     </th>
@@ -506,7 +518,7 @@ export default function Home() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} className="px-3 py-12 text-center text-sm text-slate-400">正在加载待办...</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-12 text-center text-sm text-slate-400">正在加载待办...</td></tr>
                 ) : visibleTodos.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-3 py-12 text-center text-sm text-slate-400">
@@ -522,6 +534,9 @@ export default function Home() {
                       </td>
                       <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-500">
                         {todo.project?.name ?? "未分配"}
+                      </td>
+                      <td className="border-b border-r border-slate-100 px-3 py-3 text-xs text-slate-600">
+                        {todo.assignees.length ? todo.assignees.map((item) => item.user.name || item.user.email).join("、") : "未分配"}
                       </td>
                       <td className="border-b border-r border-slate-100 px-3 py-3">
                         <select
@@ -754,6 +769,13 @@ export default function Home() {
                 </label>
               </div>
 
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">任务负责人 / 参与人</span>
+                <select multiple value={form.assigneeIds} onChange={(event) => setForm({ ...form, assigneeIds: Array.from(event.target.selectedOptions, (option) => option.value) })} className="min-h-24 w-full rounded-md border border-slate-200 bg-white px-2 py-2 text-sm" disabled={readOnly}>
+                  {members.map((member) => <option key={member.id} value={member.id}>{member.name || member.email}（{member.role}）</option>)}
+                </select>
+                <span className="mt-1 block text-xs text-slate-400">可按住 Command / Ctrl 多选成员；未选择表示暂未分配。</span>
+              </label>
               <div className="border-t border-slate-100 pt-4">
                 <div className="mb-3 text-sm font-medium">当前进展</div>
                 <label className="mb-3 block">
