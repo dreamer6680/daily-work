@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DailyPlanPanel from "@/components/daily-plan-panel";
 import WorkspaceControls from "@/components/workspace-controls";
 import {
@@ -138,11 +138,13 @@ function AssigneeMentionPicker({
   selectedIds,
   onChange,
   disabled,
+  compact = false,
 }: {
   members: WorkspaceMember[];
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   disabled: boolean;
+  compact?: boolean;
 }) {
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
@@ -189,7 +191,7 @@ function AssigneeMentionPicker({
   return (
     <div className="relative">
       <div
-        className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 shadow-sm transition focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50"
+        className={`flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 ${compact ? "min-h-9" : "min-h-11"}`}
         onClick={() => inputRef.current?.focus()}
       >
         {selectedMembers.map((member) => (
@@ -217,7 +219,7 @@ function AssigneeMentionPicker({
           onFocus={() => setOpen(inputValue.startsWith("@"))}
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
           placeholder={selectedIds.length ? "继续输入 @ 添加成员" : "输入 @ 搜索并添加负责人"}
-          className="h-7 min-w-40 flex-1 border-0 bg-transparent px-1 text-sm outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+          className="h-7 min-w-24 flex-1 border-0 bg-transparent px-1 text-sm outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
         />
         {selectedIds.length > 0 && !disabled && (
           <button type="button" onClick={() => onChange([])} className="px-1 text-xs text-slate-400 hover:text-rose-600">清空</button>
@@ -245,7 +247,7 @@ function AssigneeMentionPicker({
           )}
         </div>
       )}
-      <p className="mt-2 text-xs text-slate-400">{disabled ? "只读成员无法调整任务分配" : "输入 @ 后选择成员；可连续添加多位成员"}</p>
+      {!compact && <p className="mt-2 text-xs text-slate-400">{disabled ? "只读成员无法调整任务分配" : "输入 @ 后选择成员；可连续添加多位成员"}</p>}
     </div>
   );
 }
@@ -270,6 +272,9 @@ export default function Home() {
   const [progressSaving, setProgressSaving] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [readOnly, setReadOnly] = useState(false);
+  const [editingAssigneesTodoId, setEditingAssigneesTodoId] = useState<string | null>(null);
+  const [assigneeDraftIds, setAssigneeDraftIds] = useState<string[]>([]);
+  const [assigneeSavingTodoId, setAssigneeSavingTodoId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -459,6 +464,34 @@ export default function Home() {
       setError(cause instanceof Error ? cause.message : "保存失败");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function startAssigneeEdit(todo: Todo) {
+    if (readOnly) return;
+    setEditingAssigneesTodoId(todo.id);
+    setAssigneeDraftIds(todo.assignees.map((item) => item.user.id));
+    setError("");
+  }
+
+  async function saveAssignees(todo: Todo) {
+    setAssigneeSavingTodoId(todo.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/todos/${todo.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigneeIds: assigneeDraftIds }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "负责人更新失败");
+      setTodos((current) => current.map((item) => item.id === todo.id ? result.data : item));
+      setEditingAssigneesTodoId(null);
+      setAssigneeDraftIds([]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "负责人更新失败");
+    } finally {
+      setAssigneeSavingTodoId(null);
     }
   }
 
@@ -673,24 +706,62 @@ export default function Home() {
                       <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-500">
                         {todo.project?.name ?? "未分配"}
                       </td>
-                      <td className="border-b border-r border-slate-100 px-3 py-3">
-                        {todo.assignees.length ? (
-                          <div className="flex min-w-28 items-center">
-                            <div className="flex -space-x-2">
-                              {todo.assignees.slice(0, 3).map((item) => (
-                                <span key={item.user.id} title={memberLabel(item.user)} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-indigo-100 text-[10px] font-semibold text-indigo-700">
-                                  {memberInitial(item.user)}
-                                </span>
-                              ))}
+                      <td className="border-b border-r border-slate-100 px-3 py-2">
+                        {editingAssigneesTodoId === todo.id ? (
+                          <div className="min-w-56 space-y-2">
+                            <AssigneeMentionPicker
+                              members={members}
+                              selectedIds={assigneeDraftIds}
+                              onChange={setAssigneeDraftIds}
+                              disabled={readOnly || assigneeSavingTodoId === todo.id}
+                              compact
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => { setEditingAssigneesTodoId(null); setAssigneeDraftIds([]); }}
+                                disabled={assigneeSavingTodoId === todo.id}
+                                className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+                              >
+                                取消
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void saveAssignees(todo)}
+                                disabled={assigneeSavingTodoId === todo.id}
+                                className="rounded bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                              >
+                                {assigneeSavingTodoId === todo.id ? "保存中" : "保存"}
+                              </button>
                             </div>
-                            <span className="ml-2 max-w-24 truncate text-xs text-slate-600">
-                              {todo.assignees.length === 1 ? memberLabel(todo.assignees[0].user) : memberLabel(todo.assignees[0].user) + " 等 " + todo.assignees.length + " 人"}
-                            </span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-400">
-                            <UserRound size={12} /> 未分配
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => startAssigneeEdit(todo)}
+                            disabled={readOnly}
+                            title={readOnly ? "只读成员无法修改负责人" : "点击后输入 @ 添加或移除负责人"}
+                            className="flex min-h-9 min-w-32 items-center gap-2 rounded-md px-1.5 py-1 text-left transition hover:bg-blue-50 disabled:cursor-default disabled:hover:bg-transparent"
+                          >
+                            {todo.assignees.length ? (
+                              <>
+                                <span className="flex -space-x-2">
+                                  {todo.assignees.slice(0, 3).map((item) => (
+                                    <span key={item.user.id} title={memberLabel(item.user)} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-indigo-100 text-[10px] font-semibold text-indigo-700">
+                                      {memberInitial(item.user)}
+                                    </span>
+                                  ))}
+                                </span>
+                                <span className="max-w-24 truncate text-xs text-slate-600">
+                                  {todo.assignees.length === 1 ? memberLabel(todo.assignees[0].user) : memberLabel(todo.assignees[0].user) + " 等 " + todo.assignees.length + " 人"}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-400">
+                                <UserRound size={12} /> + @ 添加负责人
+                              </span>
+                            )}
+                          </button>
                         )}
                       </td>
                       <td className="border-b border-r border-slate-100 px-3 py-3">
