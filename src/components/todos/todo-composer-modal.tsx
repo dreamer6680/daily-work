@@ -24,7 +24,6 @@ export default function TodoComposerModal({
 }: TodoComposerModalProps) {
   if (!open) return null;
   return (
-            {open && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
                 <form onSubmit={onSubmit} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl">
                   <div className="mb-5 flex items-center justify-between">
@@ -121,7 +120,7 @@ export default function TodoComposerModal({
                   </div>
       
                   <div className="mt-6 flex justify-end gap-2">
-                    <button type="button" onClick={() => setComposerOpen(false)} className="h-9 rounded-md border border-slate-200 px-4 text-sm text-slate-600 hover:bg-slate-50">
+                    <button type="button" onClick={() => onClose()} className="h-9 rounded-md border border-slate-200 px-4 text-sm text-slate-600 hover:bg-slate-50">
                       取消
                     </button>
                     <button type="submit" disabled={saving} className="h-9 rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
@@ -130,6 +129,5 @@ export default function TodoComposerModal({
                   </div>
                 </form>
               </div>
-            )}
   );
 }
