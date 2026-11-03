@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import DailyPlanPanel from "@/components/daily-plan-panel";
 import {
   AlertCircle,
   CalendarDays,
@@ -11,6 +12,7 @@ import {
   FolderKanban,
   Inbox,
   History,
+  LogOut,
   Pencil,
   Plus,
   Search,
@@ -132,6 +134,7 @@ export default function Home() {
   const [progressTitle, setProgressTitle] = useState("");
   const [progressNote, setProgressNote] = useState("");
   const [progressSaving, setProgressSaving] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -141,6 +144,10 @@ export default function Home() {
         fetch("/api/todos", { cache: "no-store" }),
         fetch("/api/projects", { cache: "no-store" }),
       ]);
+      if (todoResponse.status === 401 || projectResponse.status === 401) {
+        window.location.assign("/login");
+        return;
+      }
       const [todoJson, projectJson] = await Promise.all([
         todoResponse.json(),
         projectResponse.json(),
@@ -234,6 +241,20 @@ export default function Home() {
       setError(cause instanceof Error ? cause.message : "保存进展失败");
     } finally {
       setProgressSaving(false);
+    }
+  }
+
+  async function handleLogout() {
+    setLogoutLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "退出登录失败");
+      window.location.assign("/login");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "退出登录失败");
+      setLogoutLoading(false);
     }
   }
 
@@ -385,9 +406,15 @@ export default function Home() {
                 className="h-9 w-56 rounded-md border border-slate-200 pl-9 pr-3 text-xs outline-none focus:border-blue-400"
               />
             </div>
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-medium">
-              D
-            </div>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              disabled={logoutLoading}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <LogOut size={14} />
+              {logoutLoading ? "退出中..." : "退出登录"}
+            </button>
           </div>
         </header>
 
@@ -433,6 +460,8 @@ export default function Home() {
               {error}
             </div>
           )}
+
+          <DailyPlanPanel todos={todos} />
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1 border-b border-slate-200">

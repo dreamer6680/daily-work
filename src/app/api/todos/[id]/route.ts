@@ -41,6 +41,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     return NextResponse.json({ data: todo });
   } catch (error) {
     console.error("[GET /api/todos/:id]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
     return NextResponse.json({ error: "读取待办详情失败" }, { status: 500 });
   }
 }
@@ -141,6 +144,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("[PATCH /api/todos/:id]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
     return NextResponse.json({ error: "更新待办失败" }, { status: 500 });
   }
 }
@@ -165,6 +171,9 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE /api/todos/:id]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
     return NextResponse.json({ error: "删除待办失败" }, { status: 500 });
   }
 }
