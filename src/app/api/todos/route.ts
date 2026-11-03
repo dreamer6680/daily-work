@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { user, workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
+    if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能修改待办" }, { status: 403 });
     const input = parsed.data;
 
     if (input.projectId) {
