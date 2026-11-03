@@ -8,7 +8,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { workspace } = await getDemoContext();
+    const { workspace, role } = await getDemoContext();
+    if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能修改每日计划" }, { status: 403 });
     const existing = await prisma.todoDailyPlan.findFirst({
       where: { id, workspaceId: workspace.id }, select: { id: true }
     });
@@ -17,6 +18,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE /api/daily-plans/:id]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") return NextResponse.json({ error: "请先登录" }, { status: 401 });
     return NextResponse.json({ error: "移除每日计划失败" }, { status: 500 });
   }
 }
