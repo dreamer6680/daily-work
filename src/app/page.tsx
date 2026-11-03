@@ -6,6 +6,7 @@ import WorkspaceControls from "@/components/workspace-controls";
 import {
   AlertCircle,
   CalendarDays,
+  Check,
   CheckCircle2,
   CircleHelp,
   Clock3,
@@ -18,6 +19,7 @@ import {
   Search,
   Trash2,
   Users,
+  UserRound,
   X,
 } from "lucide-react";
 
@@ -111,6 +113,14 @@ function NavItem({
       <span>{label}</span>
     </div>
   );
+}
+
+function memberLabel(member: { name: string | null; email: string | null }) {
+  return member.name?.trim() || member.email || "未知成员";
+}
+
+function memberInitial(member: { name: string | null; email: string | null }) {
+  return memberLabel(member).slice(0, 1).toUpperCase();
 }
 
 function formatUpdatedAt(value: string) {
@@ -491,22 +501,25 @@ export default function Home() {
               <span className="px-3 py-2 text-sm text-slate-400">时间线</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500">
-              <select value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="rounded-md border border-slate-200 bg-white px-3 py-2 outline-none">
-                <option value="ALL">全部成员</option>
-                <option value="UNASSIGNED">未分配</option>
-                {members.map((member) => <option key={member.id} value={member.id}>{member.name || member.email}</option>)}
-              </select>
+              <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500 shadow-sm">
+                <Users size={14} />
+                <select aria-label="按成员筛选" value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="max-w-36 bg-transparent text-sm text-slate-700 outline-none">
+                  <option value="ALL">全部成员</option>
+                  <option value="UNASSIGNED">未分配</option>
+                  {members.map((member) => <option key={member.id} value={member.id}>{memberLabel(member)}</option>)}
+                </select>
+              </label>
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as "ALL" | TodoStatus)}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 outline-none"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-indigo-300"
               >
                 <option value="ALL">全部状态</option>
                 {Object.entries(STATUS_META).map(([value, meta]) => (
                   <option key={value} value={value}>{meta.label}</option>
                 ))}
               </select>
-              <button onClick={() => void loadData()} className="rounded-md border border-slate-200 px-3 py-2">
+              <button onClick={() => void loadData()} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm transition hover:bg-slate-50">
                 刷新
               </button>
             </div>
@@ -542,8 +555,25 @@ export default function Home() {
                       <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-500">
                         {todo.project?.name ?? "未分配"}
                       </td>
-                      <td className="border-b border-r border-slate-100 px-3 py-3 text-xs text-slate-600">
-                        {todo.assignees.length ? todo.assignees.map((item) => item.user.name || item.user.email).join("、") : "未分配"}
+                      <td className="border-b border-r border-slate-100 px-3 py-3">
+                        {todo.assignees.length ? (
+                          <div className="flex min-w-28 items-center">
+                            <div className="flex -space-x-2">
+                              {todo.assignees.slice(0, 3).map((item) => (
+                                <span key={item.user.id} title={memberLabel(item.user)} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-indigo-100 text-[10px] font-semibold text-indigo-700">
+                                  {memberInitial(item.user)}
+                                </span>
+                              ))}
+                            </div>
+                            <span className="ml-2 max-w-24 truncate text-xs text-slate-600">
+                              {todo.assignees.length === 1 ? memberLabel(todo.assignees[0].user) : memberLabel(todo.assignees[0].user) + " 等 " + todo.assignees.length + " 人"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-400">
+                            <UserRound size={12} /> 未分配
+                          </span>
+                        )}
                       </td>
                       <td className="border-b border-r border-slate-100 px-3 py-3">
                         <select
@@ -776,13 +806,49 @@ export default function Home() {
                 </label>
               </div>
 
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium">任务负责人 / 参与人</span>
-                <select multiple value={form.assigneeIds} onChange={(event) => setForm({ ...form, assigneeIds: Array.from(event.target.selectedOptions, (option) => option.value) })} className="min-h-24 w-full rounded-md border border-slate-200 bg-white px-2 py-2 text-sm" disabled={readOnly}>
-                  {members.map((member) => <option key={member.id} value={member.id}>{member.name || member.email}（{member.role}）</option>)}
-                </select>
-                <span className="mt-1 block text-xs text-slate-400">可按住 Command / Ctrl 多选成员；未选择表示暂未分配。</span>
-              </label>
+              <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-slate-800">任务协作成员</div>
+                    <p className="mt-0.5 text-xs text-slate-500">选择负责处理这项任务的工作空间成员</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">已选 {form.assigneeIds.length} 人</span>
+                </div>
+                {form.assigneeIds.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    {members.filter((member) => form.assigneeIds.includes(member.id)).map((member) => (
+                      <span key={member.id} className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-white py-1 pl-1 pr-2 text-xs text-indigo-700">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-semibold">{memberInitial(member)}</span>
+                        {memberLabel(member)}
+                        {!readOnly && <button type="button" onClick={() => setForm((current) => ({ ...current, assigneeIds: current.assigneeIds.filter((id) => id !== member.id) }))} className="ml-0.5 rounded-full text-indigo-400 hover:text-rose-600" aria-label={"移除" + memberLabel(member)}><X size={12} /></button>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="max-h-48 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                  {members.map((member) => {
+                    const selected = form.assigneeIds.includes(member.id);
+                    const roleLabel: Record<string, string> = { OWNER: "所有者", ADMIN: "管理员", MEMBER: "成员", VIEWER: "只读成员" };
+                    return (
+                      <button key={member.id} type="button" disabled={readOnly}
+                        onClick={() => setForm((current) => ({ ...current, assigneeIds: selected ? current.assigneeIds.filter((id) => id !== member.id) : [...current.assigneeIds, member.id] }))}
+                        className={"flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors " + (selected ? "bg-indigo-50/70" : "hover:bg-slate-50") + " disabled:cursor-not-allowed disabled:opacity-60"}>
+                        <span className={"flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold " + (selected ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600")}>{memberInitial(member)}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-slate-700">{memberLabel(member)}</span>
+                          <span className="block truncate text-xs text-slate-400">{member.email || "未设置邮箱"} · {roleLabel[member.role] || member.role}</span>
+                        </span>
+                        <span className={"flex h-5 w-5 shrink-0 items-center justify-center rounded-md border " + (selected ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-300 bg-white text-transparent")}><Check size={13} /></span>
+                      </button>
+                    );
+                  })}
+                  {members.length === 0 && <div className="px-3 py-6 text-center text-sm text-slate-400">当前工作空间还没有可分配成员</div>}
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-slate-400">{readOnly ? "只读成员无法调整任务分配" : "点击成员即可添加或移除"}</span>
+                  {!readOnly && form.assigneeIds.length > 0 && <button type="button" onClick={() => setForm((current) => ({ ...current, assigneeIds: [] }))} className="text-xs text-slate-500 hover:text-rose-600">清空选择</button>}
+                </div>
+              </section>
               <div className="border-t border-slate-100 pt-4">
                 <div className="mb-3 text-sm font-medium">当前进展</div>
                 <label className="mb-3 block">
