@@ -5,10 +5,7 @@ import DailyPlanPanel from "@/components/daily-plan-panel";
 import WorkspaceSidebar from "@/components/workspace-sidebar";
 import HomeHeader from "@/components/home-header";
 import TodoStats from "@/components/todos/todo-stats";
-import {
-  Clock3,
-  Plus,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import TodoTable from "@/components/todos/todo-table";
 import TodoDetailDrawer from "@/components/todos/todo-detail-drawer";
 import TodoComposerModal from "@/components/todos/todo-composer-modal";
