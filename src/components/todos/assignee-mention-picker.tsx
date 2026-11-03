@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import type { WorkspaceMember } from "@/types/todo";
 import { memberInitial, memberLabel } from "@/lib/todo-utils";
@@ -39,7 +40,7 @@ export default function AssigneeMentionPicker({
     inputRef.current?.focus();
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (!open || candidates.length === 0) {
       if (event.key === "Backspace" && !inputValue && selectedIds.length > 0 && !disabled) {
         onChange(selectedIds.slice(0, -1));
