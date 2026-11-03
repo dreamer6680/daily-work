@@ -14,14 +14,13 @@ import {
   LogOut,
   Plus,
   Search,
-  X,
 } from "lucide-react";
 import TodoTable from "@/components/todos/todo-table";
 import TodoDetailDrawer from "@/components/todos/todo-detail-drawer";
 import TodoComposerModal from "@/components/todos/todo-composer-modal";
 import NavItem from "@/components/nav-item";
 import { EMPTY_FORM, PRIORITY_LABEL, STATUS_META } from "@/lib/todo-constants";
-import { formatUpdatedAt, memberInitial, memberLabel } from "@/lib/todo-utils";
+import { formatUpdatedAt } from "@/lib/todo-utils";
 import type { Todo, TodoDetail, TodoForm, TodoStatus, Project, WorkspaceMember } from "@/types/todo";
 
 
