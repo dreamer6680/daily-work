@@ -59,7 +59,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { user, workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
+    if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能修改待办" }, { status: 403 });
     const existing = await prisma.todo.findFirst({
       where: { id, workspaceId: workspace.id, deletedAt: null },
     });
