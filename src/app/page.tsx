@@ -134,25 +134,30 @@ export default function Home() {
   const [progressNote, setProgressNote] = useState("");
   const [progressSaving, setProgressSaving] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [readOnly, setReadOnly] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [todoResponse, projectResponse] = await Promise.all([
+      const [todoResponse, projectResponse, meResponse] = await Promise.all([
         fetch("/api/todos", { cache: "no-store" }),
         fetch("/api/projects", { cache: "no-store" }),
+        fetch("/api/auth/me", { cache: "no-store" }),
       ]);
-      if (todoResponse.status === 401 || projectResponse.status === 401) {
+      if (todoResponse.status === 401 || projectResponse.status === 401 || meResponse.status === 401) {
         window.location.assign("/login");
         return;
       }
-      const [todoJson, projectJson] = await Promise.all([
+      const [todoJson, projectJson, meJson] = await Promise.all([
         todoResponse.json(),
         projectResponse.json(),
+        meResponse.json(),
       ]);
       if (!todoResponse.ok) throw new Error(todoJson.error ?? "读取待办失败");
       if (!projectResponse.ok) throw new Error(projectJson.error ?? "读取项目失败");
+      if (!meResponse.ok) throw new Error(meJson.error ?? "读取用户信息失败");
+      setReadOnly(meJson.data.role === "VIEWER");
       setTodos(todoJson.data);
       setProjects(projectJson.data);
     } catch (cause) {
@@ -427,6 +432,7 @@ export default function Home() {
             </div>
             <button
               onClick={openCreate}
+              disabled={readOnly}
               className="inline-flex h-9 items-center gap-2 rounded-md bg-blue-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
             >
               <Plus size={16} />
@@ -460,7 +466,7 @@ export default function Home() {
             </div>
           )}
 
-          <DailyPlanPanel todos={todos} />
+          <DailyPlanPanel todos={todos} readOnly={readOnly} />
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1 border-b border-slate-200">
@@ -520,6 +526,7 @@ export default function Home() {
                       <td className="border-b border-r border-slate-100 px-3 py-3">
                         <select
                           value={todo.status}
+                          disabled={readOnly}
                           onChange={(event) => void changeStatus(todo, event.target.value as TodoStatus)}
                           className={`rounded px-2 py-1 text-xs outline-none ${STATUS_META[todo.status].className}`}
                         >
@@ -540,10 +547,10 @@ export default function Home() {
                       </td>
                       <td className="border-b border-slate-100 px-3 py-3">
                         <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100">
-                          <button onClick={() => void openDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => openEdit(todo)} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
+                          <button onClick={() => void openDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => openEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
                             <Pencil size={15} />
                           </button>
-                          <button onClick={() => void deleteTodo(todo)} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
+                          <button onClick={() => void deleteTodo(todo)} disabled={readOnly} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
                             <Trash2 size={15} />
                           </button>
                         </div>
@@ -614,6 +621,7 @@ export default function Home() {
                 <form onSubmit={submitProgress} className="space-y-3 rounded-lg border border-slate-200 p-4">
                   <input
                     value={progressTitle}
+                    disabled={readOnly}
                     onChange={(event) => setProgressTitle(event.target.value)}
                     maxLength={200}
                     placeholder="进展标题，例如：本地网络问题导致卡顿"
@@ -621,6 +629,7 @@ export default function Home() {
                   />
                   <textarea
                     value={progressNote}
+                    disabled={readOnly}
                     onChange={(event) => setProgressNote(event.target.value)}
                     rows={3}
                     placeholder="记录本次进展、遇到的问题、原因和下一步处理方式"
@@ -629,7 +638,7 @@ export default function Home() {
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      disabled={progressSaving || (!progressTitle.trim() && !progressNote.trim())}
+                      disabled={readOnly || progressSaving || (!progressTitle.trim() && !progressNote.trim())}
                       className="h-9 rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {progressSaving ? "保存中..." : "记录本次进展"}
