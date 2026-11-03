@@ -131,6 +131,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | TodoStatus>("ALL");
+  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [form, setForm] = useState<TodoForm>(EMPTY_FORM);
@@ -185,15 +186,16 @@ export default function Home() {
     const normalizedKeyword = keyword.trim().toLowerCase();
     return todos.filter((todo) => {
       const matchesStatus = statusFilter === "ALL" || todo.status === statusFilter;
+      const matchesAssignee = assigneeFilter === "ALL" || (assigneeFilter === "UNASSIGNED" ? todo.assignees.length === 0 : todo.assignees.some((item) => item.user.id === assigneeFilter));
       const matchesKeyword =
         !normalizedKeyword ||
         todo.title.toLowerCase().includes(normalizedKeyword) ||
         (todo.currentProgressTitle ?? "").toLowerCase().includes(normalizedKeyword) ||
         (todo.currentProgressNote ?? "").toLowerCase().includes(normalizedKeyword) ||
         (todo.project?.name ?? "").toLowerCase().includes(normalizedKeyword);
-      return matchesStatus && matchesKeyword;
+      return matchesStatus && matchesAssignee && matchesKeyword;
     });
-  }, [todos, keyword, statusFilter]);
+  }, [todos, keyword, statusFilter, assigneeFilter]);
 
   const stats = useMemo(
     () => ({
@@ -489,6 +491,11 @@ export default function Home() {
               <span className="px-3 py-2 text-sm text-slate-400">时间线</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500">
+              <select value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="rounded-md border border-slate-200 bg-white px-3 py-2 outline-none">
+                <option value="ALL">全部成员</option>
+                <option value="UNASSIGNED">未分配</option>
+                {members.map((member) => <option key={member.id} value={member.id}>{member.name || member.email}</option>)}
+              </select>
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as "ALL" | TodoStatus)}
@@ -521,7 +528,7 @@ export default function Home() {
                   <tr><td colSpan={8} className="px-3 py-12 text-center text-sm text-slate-400">正在加载待办...</td></tr>
                 ) : visibleTodos.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-3 py-12 text-center text-sm text-slate-400">
+                    <td colSpan={8} className="px-3 py-12 text-center text-sm text-slate-400">
                       {todos.length === 0 ? "还没有待办，点击右上角新建第一条任务。" : "没有符合条件的任务。"}
                     </td>
                   </tr>
