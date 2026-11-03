@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DailyPlanPanel from "@/components/daily-plan-panel";
+import WorkspaceControls from "@/components/workspace-controls";
 import {
   AlertCircle,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
   CircleHelp,
   Clock3,
   FolderKanban,
@@ -16,7 +16,6 @@ import {
   Pencil,
   Plus,
   Search,
-  Settings2,
   Trash2,
   Users,
   X,
@@ -358,10 +357,10 @@ export default function Home() {
             <div className="text-sm font-semibold">Daily Work</div>
             <div className="text-xs text-slate-400">开发工作台</div>
           </div>
-          <ChevronDown className="ml-auto text-slate-400" size={15} />
+
         </div>
 
-        <div className="mb-2 px-3 text-xs font-medium text-slate-400">工作空间</div>
+        <WorkspaceControls />
         <nav className="space-y-1">
           <NavItem icon={Inbox} label="全部任务" />
           <NavItem icon={CalendarDays} label="今日待办" active />
@@ -386,7 +385,7 @@ export default function Home() {
         <div className="mb-2 mt-8 px-3 text-xs font-medium text-slate-400">管理</div>
         <nav className="space-y-1">
           <NavItem icon={CircleHelp} label="问题管理" />
-          <NavItem icon={Settings2} label="工作空间设置" />
+
         </nav>
       </aside>
 
