@@ -11,5 +11,6 @@ export async function POST() {
   if (token) await prisma.session.deleteMany({ where: { sessionToken: token } });
   const response = NextResponse.json({ data: { success: true } });
   clearSessionCookie(response);
+  response.headers.append("Set-Cookie", "daily_work_workspace=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
   return response;
 }

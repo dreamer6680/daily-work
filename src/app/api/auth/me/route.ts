@@ -5,11 +5,12 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const { user, workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
     return NextResponse.json({
       data: {
         user: { id: user.id, name: user.name, email: user.email },
         workspace: { id: workspace.id, name: workspace.name },
+        role,
       },
     });
   } catch {
