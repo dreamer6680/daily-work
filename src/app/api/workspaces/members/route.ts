@@ -7,13 +7,13 @@ export const runtime = "nodejs";
 const schema = z.object({ email: z.string().trim().email().max(255), role: z.enum(["ADMIN", "MEMBER", "VIEWER"]).default("MEMBER") });
 export async function GET() {
   try {
-    const { workspace, role } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId: workspace.id },
       include: { user: { select: { id: true, name: true, email: true } } },
       orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
     });
-    return NextResponse.json({ data: { currentRole: role, members: members.map(({ user, role: memberRole, joinedAt }) => ({ id: user.id, name: user.name, email: user.email, role: memberRole, joinedAt })) } });
+    return NextResponse.json({ data: { currentUserId: user.id, currentRole: role, members: members.map(({ user, role: memberRole, joinedAt }) => ({ id: user.id, name: user.name, email: user.email, role: memberRole, joinedAt })) } });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return NextResponse.json({ error: "请先登录" }, { status: 401 });
     console.error("[GET /api/workspaces/members]", error);
