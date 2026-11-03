@@ -21,7 +21,7 @@ function minutesLabel(value: number | null) {
   return Math.floor(value / 60) + " 小时" + (value % 60 ? " " + value % 60 + " 分钟" : "");
 }
 
-export default function DailyPlanPanel({ todos }: { todos: TodoOption[] }) {
+export default function DailyPlanPanel({ todos, readOnly = false }: { todos: TodoOption[]; readOnly?: boolean }) {
   const [date, setDate] = useState(localDateString);
   const [plans, setPlans] = useState<DailyPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +98,7 @@ export default function DailyPlanPanel({ todos }: { todos: TodoOption[] }) {
         <p className="mt-1 text-xs text-slate-500">按日期安排持续任务，记录计划内容、实际进展和耗时</p></div>
       <div className="flex items-center gap-2">
         <input aria-label="计划日期" type="date" value={date} onChange={(event) => { setDate(event.target.value); setOpen(false); }} className="h-9 rounded-md border border-slate-200 px-2 text-sm" />
-        <button onClick={createPlan} disabled={!available.length} className="inline-flex h-9 items-center gap-1 rounded-md bg-blue-600 px-3 text-sm text-white hover:bg-blue-700 disabled:opacity-50"><Plus size={15} />添加任务</button>
+        <button onClick={createPlan} disabled={readOnly || !available.length} className="inline-flex h-9 items-center gap-1 rounded-md bg-blue-600 px-3 text-sm text-white hover:bg-blue-700 disabled:opacity-50"><Plus size={15} />添加任务</button>
       </div>
     </div>
     {error && <div className="mx-4 mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
@@ -113,15 +113,15 @@ export default function DailyPlanPanel({ todos }: { todos: TodoOption[] }) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div><div className="font-medium">{item.todo.title}</div><div className="mt-1 text-xs text-slate-400">{item.todo.project?.name ?? "未分配项目"} · {item.todo.status}</div></div>
           <div className="flex items-center gap-3 text-xs text-slate-500"><span><Clock3 size={13} className="mr-1 inline" />计划 {minutesLabel(item.plannedMinutes)}</span><span><Clock3 size={13} className="mr-1 inline" />实际 {minutesLabel(item.actualMinutes)}</span>
-            <button onClick={() => editPlan(item)} aria-label="编辑计划" className="rounded p-1 hover:bg-slate-100"><Pencil size={14} /></button>
-            <button onClick={() => void remove(item)} aria-label="移除计划" className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={14} /></button></div>
+            <button onClick={() => editPlan(item)} disabled={readOnly} aria-label="编辑计划" className="rounded p-1 hover:bg-slate-100"><Pencil size={14} /></button>
+            <button onClick={() => void remove(item)} disabled={readOnly} aria-label="移除计划" className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={14} /></button></div>
         </div>
         {(item.planNote || item.actualNote) && <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
           {item.planNote && <div><div className="mb-1 text-xs font-medium text-slate-400">计划内容</div><p className="whitespace-pre-wrap text-slate-600">{item.planNote}</p></div>}
           {item.actualNote && <div><div className="mb-1 text-xs font-medium text-slate-400">实际进展 / 备注</div><p className="whitespace-pre-wrap text-slate-600">{item.actualNote}</p></div>}
         </div>}
       </article>)}</div>}
-    {open && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/30 p-4">
+    {open && !readOnly && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/30 p-4">
       <form onSubmit={save} className="w-full max-w-xl rounded-xl bg-white p-5 shadow-xl">
         <div className="mb-5 flex items-center justify-between"><div><h3 className="text-base font-semibold">{editing ? "编辑每日计划" : "添加每日计划"}</h3><p className="mt-1 text-xs text-slate-500">{date}</p></div>
           <button type="button" onClick={() => setOpen(false)} aria-label="关闭" className="rounded p-1 text-slate-400"><X size={18} /></button></div>
