@@ -27,6 +27,9 @@ export async function GET() {
     return NextResponse.json({ data: todos });
   } catch (error) {
     console.error("[GET /api/todos]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
     return NextResponse.json({ error: "读取待办失败" }, { status: 500 });
   }
 }
@@ -91,6 +94,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: todo }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/todos]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
     return NextResponse.json({ error: "创建待办失败" }, { status: 500 });
   }
 }

@@ -141,6 +141,10 @@ export default function Home() {
         fetch("/api/todos", { cache: "no-store" }),
         fetch("/api/projects", { cache: "no-store" }),
       ]);
+      if (todoResponse.status === 401 || projectResponse.status === 401) {
+        window.location.assign("/login");
+        return;
+      }
       const [todoJson, projectJson] = await Promise.all([
         todoResponse.json(),
         projectResponse.json(),
