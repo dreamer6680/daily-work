@@ -4,7 +4,7 @@ import type { FormEvent } from "react";
 import { Clock3, History, X } from "lucide-react";
 import { PRIORITY_LABEL, STATUS_META } from "@/lib/todo-constants";
 import { formatUpdatedAt } from "@/lib/todo-utils";
-import type { TodoDetail, TodoStatus } from "@/types/todo";
+import type { TodoDetail } from "@/types/todo";
 
 type TodoDetailDrawerProps = {
   loading: boolean;
