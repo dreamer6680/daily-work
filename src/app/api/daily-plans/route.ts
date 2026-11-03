@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data });
   } catch (error) {
     console.error("[GET /api/daily-plans]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") return NextResponse.json({ error: "请先登录" }, { status: 401 });
     return NextResponse.json({ error: "读取每日计划失败" }, { status: 500 });
   }
 }
@@ -42,7 +43,8 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "请求参数不正确" }, { status: 400 });
-    const { user, workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
+    if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能修改每日计划" }, { status: 403 });
     const input = parsed.data;
     const planDate = parseDate(input.planDate);
     if (!planDate) return NextResponse.json({ error: "日期无效" }, { status: 400 });
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data });
   } catch (error) {
     console.error("[POST /api/daily-plans]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") return NextResponse.json({ error: "请先登录" }, { status: 401 });
     return NextResponse.json({ error: "保存每日计划失败" }, { status: 500 });
   }
 }
