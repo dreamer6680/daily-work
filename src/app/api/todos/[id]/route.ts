@@ -152,7 +152,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         });
       }
 
-      return todo;
+      return tx.todo.findUniqueOrThrow({ where: { id }, include: { project: { select: { id: true, name: true, color: true } }, assignees: { include: { user: { select: { id: true, name: true, email: true } } } } } });
     });
 
     return NextResponse.json({ data: updated });
