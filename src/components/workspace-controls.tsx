@@ -193,7 +193,7 @@ export default function WorkspaceControls() {
             <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
               {members.map((member) => {
                 const canEdit = canManage && member.role !== "OWNER" && member.id !== currentUserId && (currentRole === "OWNER" || member.role !== "ADMIN");
-                const canRemove = canManage && member.role !== "OWNER" && !(currentRole === "ADMIN" && member.role === "ADMIN");
+                const canRemove = canManage && member.role !== "OWNER" && member.id !== currentUserId && !(currentRole === "ADMIN" && member.role === "ADMIN");
                 return <div key={member.id} className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium text-slate-700">{member.name || "未设置姓名"}{member.role === "OWNER" && <span className="ml-2 text-xs text-slate-400">工作空间所有者</span>}</div><div className="truncate text-xs text-slate-400">{member.email}</div></div>
                   <div className="flex items-center gap-2">
