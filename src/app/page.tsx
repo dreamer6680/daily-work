@@ -12,246 +12,17 @@ import {
   Clock3,
   FolderKanban,
   Inbox,
-  History,
   LogOut,
-  Pencil,
   Plus,
   Search,
-  Trash2,
-  Users,
-  UserRound,
   X,
 } from "lucide-react";
+import TodoTable from "@/components/todos/todo-table";
+import AssigneeMentionPicker from "@/components/todos/assignee-mention-picker";
+import { EMPTY_FORM, PRIORITY_LABEL, STATUS_META } from "@/lib/todo-constants";
+import { formatUpdatedAt, memberInitial, memberLabel } from "@/lib/todo-utils";
+import type { Todo, TodoDetail, TodoForm, TodoStatus, Project, ProgressLog, WorkspaceMember } from "@/types/todo";
 
-type TodoStatus = "TODO" | "IN_PROGRESS" | "PAUSED" | "DONE" | "CANCELED";
-type Priority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
-
-type Project = { id: string; name: string; color: string | null };
-type WorkspaceMember = { id: string; name: string | null; email: string | null; role: string };
-type TodoAssignee = { user: { id: string; name: string | null; email: string | null } };
-type Todo = {
-  id: string;
-  title: string;
-  description: string | null;
-  status: TodoStatus;
-  priority: Priority;
-  currentProgressTitle: string | null;
-  currentProgressNote: string | null;
-  updatedAt: string;
-  project: Project | null;
-  assignees: TodoAssignee[];
-};
-
-type ProgressLog = {
-  id: string;
-  eventType: string;
-  fromStatus: TodoStatus | null;
-  toStatus: TodoStatus | null;
-  progressTitle: string | null;
-  progressNote: string | null;
-  createdAt: string;
-  author: { id: string; name: string | null; email: string | null };
-};
-
-type TodoDetail = Todo & { progressLogs: ProgressLog[] };
-
-type TodoForm = {
-  title: string;
-  description: string;
-  projectId: string;
-  status: TodoStatus;
-  priority: Priority;
-  currentProgressTitle: string;
-  currentProgressNote: string;
-  assigneeIds: string[];
-};
-
-const EMPTY_FORM: TodoForm = {
-  title: "",
-  description: "",
-  projectId: "",
-  status: "TODO",
-  priority: "NORMAL",
-  currentProgressTitle: "",
-  currentProgressNote: "",
-  assigneeIds: [],
-};
-
-const STATUS_META: Record<TodoStatus, { label: string; className: string }> = {
-  TODO: { label: "待办", className: "bg-slate-100 text-slate-600" },
-  IN_PROGRESS: { label: "进行中", className: "bg-blue-50 text-blue-700" },
-  PAUSED: { label: "已暂停", className: "bg-amber-50 text-amber-700" },
-  DONE: { label: "已完成", className: "bg-green-50 text-green-700" },
-  CANCELED: { label: "已取消", className: "bg-rose-50 text-rose-700" },
-};
-
-const PRIORITY_LABEL: Record<Priority, string> = {
-  LOW: "低",
-  NORMAL: "普通",
-  HIGH: "高",
-  URGENT: "紧急",
-};
-
-function NavItem({
-  icon: Icon,
-  label,
-  active = false,
-}: {
-  icon: React.ElementType;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={`flex h-9 items-center gap-2 rounded-md px-3 text-sm ${
-        active
-          ? "bg-blue-50 font-medium text-blue-700"
-          : "text-slate-600 hover:bg-slate-100"
-      }`}
-    >
-      <Icon size={16} strokeWidth={1.8} />
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function memberLabel(member: { name: string | null; email: string | null }) {
-  return member.name?.trim() || member.email || "未知成员";
-}
-
-function memberInitial(member: { name: string | null; email: string | null }) {
-  return memberLabel(member).slice(0, 1).toUpperCase();
-}
-
-function formatUpdatedAt(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-
-function AssigneeMentionPicker({
-  members,
-  selectedIds,
-  onChange,
-  disabled,
-  compact = false,
-}: {
-  members: WorkspaceMember[];
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
-  disabled: boolean;
-  compact?: boolean;
-}) {
-  const [inputValue, setInputValue] = useState("");
-  const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const query = inputValue.startsWith("@") ? inputValue.slice(1).trim().toLowerCase() : null;
-  const candidates = query === null ? [] : members.filter((member) => {
-    if (selectedIds.includes(member.id)) return false;
-    const name = member.name?.toLowerCase() ?? "";
-    const email = member.email?.toLowerCase() ?? "";
-    return !query || name.includes(query) || email.includes(query);
-  });
-  const selectedMembers = members.filter((member) => selectedIds.includes(member.id));
-
-  function addMember(member: WorkspaceMember) {
-    if (!selectedIds.includes(member.id)) onChange([...selectedIds, member.id]);
-    setInputValue("");
-    setOpen(false);
-    setActiveIndex(0);
-    inputRef.current?.focus();
-  }
-
-  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (!open || candidates.length === 0) {
-      if (event.key === "Backspace" && !inputValue && selectedIds.length > 0 && !disabled) {
-        onChange(selectedIds.slice(0, -1));
-      }
-      return;
-    }
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveIndex((index) => (index + 1) % candidates.length);
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveIndex((index) => (index - 1 + candidates.length) % candidates.length);
-    } else if (event.key === "Enter") {
-      event.preventDefault();
-      addMember(candidates[activeIndex] ?? candidates[0]);
-    } else if (event.key === "Escape") {
-      setOpen(false);
-    }
-  }
-
-  return (
-    <div className="relative">
-      <div
-        className={`flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 ${compact ? "min-h-9" : "min-h-11"}`}
-        onClick={() => inputRef.current?.focus()}
-      >
-        {selectedMembers.map((member) => (
-          <span key={member.id} className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 py-1 pl-1 pr-1.5 text-xs font-medium text-blue-700">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px]">{memberInitial(member)}</span>
-            {memberLabel(member)}
-            {!disabled && (
-              <button type="button" onClick={(event) => { event.stopPropagation(); onChange(selectedIds.filter((id) => id !== member.id)); }} className="rounded text-blue-400 hover:text-rose-600" aria-label={"移除" + memberLabel(member)}>
-                <X size={12} />
-              </button>
-            )}
-          </span>
-        ))}
-        <input
-          ref={inputRef}
-          autoFocus={compact}
-          value={inputValue}
-          disabled={disabled}
-          onChange={(event) => {
-            const value = event.target.value;
-            setInputValue(value);
-            setOpen(value.startsWith("@"));
-            setActiveIndex(0);
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setOpen(inputValue.startsWith("@"))}
-          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-          placeholder={selectedIds.length ? "继续输入 @ 添加成员" : "输入 @ 搜索并添加负责人"}
-          className="h-7 min-w-24 flex-1 border-0 bg-transparent px-1 text-sm outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
-        />
-        {selectedIds.length > 0 && !disabled && (
-          <button type="button" onClick={() => onChange([])} className="px-1 text-xs text-slate-400 hover:text-rose-600">清空</button>
-        )}
-      </div>
-      {open && query !== null && (
-        <div className={compact ? "relative z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-xl" : "absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-xl"}>
-          {candidates.length ? candidates.map((member, index) => (
-            <button
-              key={member.id}
-              type="button"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => addMember(member)}
-              className={"flex w-full items-center gap-3 px-3 py-2 text-left " + (index === activeIndex ? "bg-blue-50" : "hover:bg-slate-50")}
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">{memberInitial(member)}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-slate-700">{memberLabel(member)}</span>
-                <span className="block truncate text-xs text-slate-400">{member.email || "未设置邮箱"}</span>
-              </span>
-              <span className="text-xs text-slate-400">@ 添加</span>
-            </button>
-          )) : (
-            <div className="px-3 py-5 text-center text-sm text-slate-400">没有匹配的工作空间成员</div>
-          )}
-        </div>
-      )}
-      {!compact && <p className="mt-2 text-xs text-slate-400">{disabled ? "只读成员无法调整任务分配" : "输入 @ 后选择成员；可连续添加多位成员"}</p>}
-    </div>
-  );
-}
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -644,170 +415,31 @@ export default function Home() {
 
           <DailyPlanPanel todos={todos} readOnly={readOnly} />
 
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1 border-b border-slate-200">
-              <span className="border-b-2 border-blue-600 px-3 py-2 text-sm font-medium text-blue-700">
-                <span className="mr-2">▦</span>表格视图
-              </span>
-              <span className="px-3 py-2 text-sm text-slate-400">看板视图</span>
-              <span className="px-3 py-2 text-sm text-slate-400">时间线</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500 shadow-sm">
-                <Users size={14} />
-                <select aria-label="按成员筛选" value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="max-w-36 bg-transparent text-sm text-slate-700 outline-none">
-                  <option value="ALL">全部成员</option>
-                  <option value="UNASSIGNED">未分配</option>
-                  {members.map((member) => <option key={member.id} value={member.id}>{memberLabel(member)}</option>)}
-                </select>
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as "ALL" | TodoStatus)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-indigo-300"
-              >
-                <option value="ALL">全部状态</option>
-                {Object.entries(STATUS_META).map(([value, meta]) => (
-                  <option key={value} value={value}>{meta.label}</option>
-                ))}
-              </select>
-              <button onClick={() => void loadData()} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm transition hover:bg-slate-50">
-                刷新
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500">
-                <tr>
-                  {["任务名称", "项目", "负责人", "状态", "当前进展", "优先级", "更新时间", "操作"].map((head) => (
-                    <th key={head} className="border-b border-r border-slate-200 px-3 py-3 font-medium last:border-r-0">
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="px-3 py-12 text-center text-sm text-slate-400">正在加载待办...</td></tr>
-                ) : visibleTodos.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-3 py-12 text-center text-sm text-slate-400">
-                      {todos.length === 0 ? "还没有待办，点击右上角新建第一条任务。" : "没有符合条件的任务。"}
-                    </td>
-                  </tr>
-                ) : (
-                  visibleTodos.map((todo) => (
-                    <tr key={todo.id} className="group hover:bg-slate-50">
-                      <td className="border-b border-r border-slate-100 px-3 py-3 font-medium text-slate-800">
-                        <button onClick={() => void openDetails(todo)} className="text-left hover:text-blue-700 hover:underline">{todo.title}</button>
-                        {todo.description && <div className="mt-1 max-w-56 truncate text-xs font-normal text-slate-400">{todo.description}</div>}
-                      </td>
-                      <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-500">
-                        {todo.project?.name ?? "未分配"}
-                      </td>
-                      <td className="border-b border-r border-slate-100 px-3 py-2">
-                        {editingAssigneesTodoId === todo.id ? (
-                          <div className="min-w-56 space-y-2">
-                            <AssigneeMentionPicker
-                              members={members}
-                              selectedIds={assigneeDraftIds}
-                              onChange={setAssigneeDraftIds}
-                              disabled={readOnly || assigneeSavingTodoId === todo.id}
-                              compact
-                            />
-                            <div className="flex justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => { setEditingAssigneesTodoId(null); setAssigneeDraftIds([]); }}
-                                disabled={assigneeSavingTodoId === todo.id}
-                                className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-50"
-                              >
-                                取消
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void saveAssignees(todo)}
-                                disabled={assigneeSavingTodoId === todo.id}
-                                className="rounded bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                              >
-                                {assigneeSavingTodoId === todo.id ? "保存中" : "保存"}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => startAssigneeEdit(todo)}
-                            disabled={readOnly}
-                            title={readOnly ? "只读成员无法修改负责人" : "点击后输入 @ 添加或移除负责人"}
-                            className="flex min-h-9 min-w-32 items-center gap-2 rounded-md px-1.5 py-1 text-left transition hover:bg-blue-50 disabled:cursor-default disabled:hover:bg-transparent"
-                          >
-                            {todo.assignees.length ? (
-                              <>
-                                <span className="flex -space-x-2">
-                                  {todo.assignees.slice(0, 3).map((item) => (
-                                    <span key={item.user.id} title={memberLabel(item.user)} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-indigo-100 text-[10px] font-semibold text-indigo-700">
-                                      {memberInitial(item.user)}
-                                    </span>
-                                  ))}
-                                </span>
-                                <span className="max-w-24 truncate text-xs text-slate-600">
-                                  {todo.assignees.length === 1 ? memberLabel(todo.assignees[0].user) : memberLabel(todo.assignees[0].user) + " 等 " + todo.assignees.length + " 人"}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-400">
-                                <UserRound size={12} /> + @ 添加负责人
-                              </span>
-                            )}
-                          </button>
-                        )}
-                      </td>
-                      <td className="border-b border-r border-slate-100 px-3 py-3">
-                        <select
-                          value={todo.status}
-                          disabled={readOnly}
-                          onChange={(event) => void changeStatus(todo, event.target.value as TodoStatus)}
-                          className={`rounded px-2 py-1 text-xs outline-none ${STATUS_META[todo.status].className}`}
-                        >
-                          {Object.entries(STATUS_META).map(([value, meta]) => (
-                            <option key={value} value={value}>{meta.label}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="max-w-64 border-b border-r border-slate-100 px-3 py-3 text-slate-600">
-                        <div className="max-w-64 truncate">{todo.currentProgressTitle || "暂无进展"}</div>
-                        {todo.currentProgressNote && <div className="mt-1 max-w-64 truncate text-xs text-slate-400">{todo.currentProgressNote}</div>}
-                      </td>
-                      <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-600">
-                        {PRIORITY_LABEL[todo.priority]}
-                      </td>
-                      <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-500">
-                        {formatUpdatedAt(todo.updatedAt)}
-                      </td>
-                      <td className="border-b border-slate-100 px-3 py-3">
-                        <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100">
-                          <button onClick={() => void openDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => openEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
-                            <Pencil size={15} />
-                          </button>
-                          <button onClick={() => void deleteTodo(todo)} disabled={readOnly} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
-            <CheckCircle2 size={14} />
-            数据来自 PostgreSQL；新建、编辑、状态变更和软删除均通过服务端 API 完成。
-          </div>
+          <TodoTable
+            todos={todos}
+            visibleTodos={visibleTodos}
+            members={members}
+            loading={loading}
+            readOnly={readOnly}
+            keyword={keyword}
+            onKeywordChange={setKeyword}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            assigneeFilter={assigneeFilter}
+            onAssigneeFilterChange={setAssigneeFilter}
+            onRefresh={() => void loadData()}
+            onOpenDetails={(todo) => void openDetails(todo)}
+            onOpenEdit={openEdit}
+            onDelete={(todo) => void deleteTodo(todo)}
+            onChangeStatus={(todo, status) => void changeStatus(todo, status)}
+            editingAssigneesTodoId={editingAssigneesTodoId}
+            assigneeDraftIds={assigneeDraftIds}
+            onAssigneeDraftChange={setAssigneeDraftIds}
+            assigneeSavingTodoId={assigneeSavingTodoId}
+            onStartAssigneeEdit={startAssigneeEdit}
+            onSaveAssignees={(todo) => void saveAssignees(todo)}
+            onCancelAssigneeEdit={() => { setEditingAssigneesTodoId(null); setAssigneeDraftIds([]); }}
+          />
         </div>
       </section>
 
