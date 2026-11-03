@@ -14,6 +14,7 @@ const updateTodoSchema = z.object({
   priority: z.nativeEnum(Priority).optional(),
   currentProgressTitle: z.string().max(200).optional().nullable(),
   currentProgressNote: z.string().max(10000).optional().nullable(),
+  assigneeIds: z.array(z.string().uuid()).max(50).optional(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -26,6 +27,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       where: { id, workspaceId: workspace.id, deletedAt: null },
       include: {
         project: { select: { id: true, name: true, color: true } },
+        assignees: { include: { user: { select: { id: true, name: true, email: true } } } },
         progressLogs: {
           orderBy: { createdAt: "desc" },
           take: 100,
@@ -69,6 +71,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const input = parsed.data;
+    if (input.assigneeIds !== undefined) {
+      const assigneeIds = [...new Set(input.assigneeIds)];
+      const validMembers = assigneeIds.length ? await prisma.workspaceMember.count({ where: { workspaceId: workspace.id, userId: { in: assigneeIds } } }) : 0;
+      if (validMembers !== assigneeIds.length) return NextResponse.json({ error: "负责人必须是当前工作空间成员" }, { status: 400 });
+    }
     if (input.projectId) {
       const project = await prisma.project.findFirst({
         where: { id: input.projectId, workspaceId: workspace.id },
@@ -87,10 +94,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         input.currentProgressNote !== existing.currentProgressNote);
 
     const updated = await prisma.$transaction(async (tx) => {
+      const { assigneeIds, ...todoInput } = input;
       const todo = await tx.todo.update({
         where: { id },
         data: {
-          ...input,
+          ...todoInput,
           updatedById: user.id,
           completedAt:
             input.status === "DONE"
@@ -99,8 +107,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
                 ? null
                 : undefined,
         },
-        include: { project: { select: { id: true, name: true, color: true } } },
+        include: { project: { select: { id: true, name: true, color: true } }, assignees: { include: { user: { select: { id: true, name: true, email: true } } } } },
       });
+
+      if (assigneeIds !== undefined) {
+        await tx.todoAssignee.deleteMany({ where: { todoId: id } });
+        if (assigneeIds.length) await tx.todoAssignee.createMany({ data: [...new Set(assigneeIds)].map((userId) => ({ todoId: id, userId, assignedById: user.id })) });
+      }
 
       if (statusChanged) {
         const eventType =
