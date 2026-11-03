@@ -72,6 +72,7 @@ enum BlockerEventType {
 model User {
   id            String    @id @default(uuid()) @db.Uuid
   name          String?   @db.VarChar(100)
+  passwordHash  String?   @map("password_hash") @db.Text
   email         String?   @unique @db.VarChar(255)
   emailVerified DateTime? @map("email_verified") @db.Timestamptz(3)
   image         String?
