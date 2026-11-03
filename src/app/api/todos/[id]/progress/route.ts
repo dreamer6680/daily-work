@@ -69,6 +69,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/todos/:id/progress]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
     return NextResponse.json({ error: "保存进展失败" }, { status: 500 });
   }
 }

@@ -15,6 +15,9 @@ export async function GET() {
     return NextResponse.json({ data: projects });
   } catch (error) {
     console.error("[GET /api/projects]", error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
     return NextResponse.json({ error: "读取项目失败" }, { status: 500 });
   }
 }
