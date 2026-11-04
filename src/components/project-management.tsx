@@ -6,7 +6,7 @@ import { Archive, FolderKanban, Pencil, Plus, Save, X } from "lucide-react";
 type Project = {
   id: string;
   name: string;
-  description: string | null;
+  description?: string | null;
   color: string | null;
   status?: "IN_PROGRESS" | "PAUSED" | "DONE";
   taskCount?: number;
