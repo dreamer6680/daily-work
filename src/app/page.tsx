@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DailyPlanPanel from "@/components/daily-plan-panel";
 import WorkspaceControls from "@/components/workspace-controls";
+import BlockerManagement from "@/components/blocker-management";
 import {
   AlertCircle,
   CalendarDays,
@@ -96,14 +97,18 @@ function NavItem({
   icon: Icon,
   label,
   active = false,
+  onClick,
 }: {
   icon: React.ElementType;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div
-      className={`flex h-9 items-center gap-2 rounded-md px-3 text-sm ${
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex h-9 w-full items-center gap-2 rounded-md px-3 text-left text-sm ${
         active
           ? "bg-blue-50 font-medium text-blue-700"
           : "text-slate-600 hover:bg-slate-100"
@@ -111,7 +116,7 @@ function NavItem({
     >
       <Icon size={16} strokeWidth={1.8} />
       <span>{label}</span>
-    </div>
+    </button>
   );
 }
 
@@ -254,6 +259,7 @@ function AssigneeMentionPicker({
 }
 
 export default function Home() {
+  const [activeView, setActiveView] = useState<"tasks" | "blockers">("tasks");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
@@ -543,11 +549,11 @@ export default function Home() {
 
         <WorkspaceControls />
         <nav className="space-y-1">
-          <NavItem icon={Inbox} label="全部任务" />
-          <NavItem icon={CalendarDays} label="今日待办" active />
-          <NavItem icon={Users} label="我负责的" />
-          <NavItem icon={Clock3} label="最近更新" />
-          <NavItem icon={AlertCircle} label="阻塞任务" />
+          <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks"} onClick={() => setActiveView("tasks")} />
+          <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks"} onClick={() => setActiveView("tasks")} />
+          <NavItem icon={Users} label="我负责的" onClick={() => { setAssigneeFilter("ALL"); setActiveView("tasks"); }} />
+          <NavItem icon={Clock3} label="最近更新" onClick={() => setActiveView("tasks")} />
+          <NavItem icon={AlertCircle} label="阻塞任务" active={activeView === "blockers"} onClick={() => setActiveView("blockers")} />
         </nav>
 
         <div className="mb-2 mt-8 flex items-center justify-between px-3 text-xs font-medium text-slate-400">
@@ -565,7 +571,7 @@ export default function Home() {
 
         <div className="mb-2 mt-8 px-3 text-xs font-medium text-slate-400">管理</div>
         <nav className="space-y-1">
-          <NavItem icon={CircleHelp} label="问题管理" />
+          <NavItem icon={CircleHelp} label="问题管理" active={activeView === "blockers"} onClick={() => setActiveView("blockers")} />
 
         </nav>
       </aside>
@@ -574,7 +580,7 @@ export default function Home() {
         <header className="flex h-14 items-center justify-between border-b border-slate-200 px-5">
           <div className="text-sm text-slate-500">
             工作空间 <span className="px-1">/</span>
-            <span className="font-medium text-slate-800">今日待办</span>
+            <span className="font-medium text-slate-800">{activeView === "blockers" ? "阻塞问题" : "今日待办"}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative hidden sm:block">
@@ -598,6 +604,9 @@ export default function Home() {
           </div>
         </header>
 
+        {activeView === "blockers" ? (
+          <div className="p-5 md:p-8"><BlockerManagement members={members} todos={todos} readOnly={readOnly} /></div>
+        ) : (
         <div className="p-5 md:p-8">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -809,6 +818,7 @@ export default function Home() {
             数据来自 PostgreSQL；新建、编辑、状态变更和软删除均通过服务端 API 完成。
           </div>
         </div>
+        )}
       </section>
 
       {detailLoading && (
