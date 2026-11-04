@@ -252,8 +252,8 @@ export default function ProjectManagement({
                 <div className="flex items-start gap-2"><span className="mt-1 h-8 w-1 rounded-full" style={{ backgroundColor: selected.color ?? "#64748b" }} /><div className="min-w-0 flex-1"><h2 className="font-semibold text-slate-800">{selected.name}</h2><p className="mt-1 text-xs text-slate-500">{selected.description || "暂无描述"}</p></div></div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button type="button" onClick={() => onOpenTasks(selected.id)} className="h-8 rounded-md bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700">查看项目任务</button>
-                  {!readOnly && <button type="button" onClick={() => startEdit(selected)} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-2 text-xs text-slate-600 hover:bg-slate-50"><Pencil size={12} />编辑</button>}
-                  {!readOnly && <button type="button" disabled={saving} onClick={() => void archiveProject(selected)} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-2 text-xs text-slate-500 hover:border-rose-200 hover:text-rose-600"><Archive size={12} />归档</button>}
+                  {!readOnly && canManageMembers && <button type="button" onClick={() => startEdit(selected)} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-2 text-xs text-slate-600 hover:bg-slate-50"><Pencil size={12} />编辑</button>}
+                  {!readOnly && canManageMembers && <button type="button" disabled={saving} onClick={() => void archiveProject(selected)} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-2 text-xs text-slate-500 hover:border-rose-200 hover:text-rose-600"><Archive size={12} />归档</button>}
                 </div>
               </div>
               <div className="p-4">
