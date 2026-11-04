@@ -512,6 +512,8 @@ export default function Home() {
             </button>
           </div>
 
+          {taskScope !== "today" && (
+            <>
           <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
               ["全部任务", stats.total, CalendarDays],
@@ -584,6 +586,8 @@ export default function Home() {
             <CheckCircle2 size={14} />
             数据来自 PostgreSQL；新建、编辑、状态变更和软删除均通过服务端 API 完成。
           </div>
+            </>
+          )}
         </div>
         )}
       </section>
