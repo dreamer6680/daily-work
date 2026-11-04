@@ -90,7 +90,7 @@ export default function TodoTable({
                         visibleTodos.map((todo) => (
                           <tr key={todo.id} className="group hover:bg-slate-50">
                             <td className="border-b border-r border-slate-100 px-3 py-3 font-medium text-slate-800">
-                              <button onClick={() => void openDetails(todo)} className="text-left hover:text-blue-700 hover:underline">{todo.title}</button>
+                              <button onClick={() => void onOpenDetails(todo)} className="text-left hover:text-blue-700 hover:underline">{todo.title}</button>
                               {todo.description && <div className="mt-1 max-w-56 truncate text-xs font-normal text-slate-400">{todo.description}</div>}
                             </td>
                             <td className="border-b border-r border-slate-100 px-3 py-3 text-slate-500">
@@ -109,7 +109,7 @@ export default function TodoTable({
                                   <div className="flex justify-end gap-2">
                                     <button
                                       type="button"
-                                      onClick={() => { setEditingAssigneesTodoId(null); setAssigneeDraftIds([]); }}
+                                      onClick={onCancelAssigneeEdit}
                                       disabled={assigneeSavingTodoId === todo.id}
                                       className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-50"
                                     >
@@ -117,7 +117,7 @@ export default function TodoTable({
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => void saveAssignees(todo)}
+                                      onClick={() => void onSaveAssignees(todo)}
                                       disabled={assigneeSavingTodoId === todo.id}
                                       className="rounded bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                                     >
@@ -128,7 +128,7 @@ export default function TodoTable({
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => startAssigneeEdit(todo)}
+                                  onClick={() => onStartAssigneeEdit(todo)}
                                   disabled={readOnly}
                                   title={readOnly ? "只读成员无法修改负责人" : "点击后输入 @ 添加或移除负责人"}
                                   className="flex min-h-9 min-w-32 items-center gap-2 rounded-md px-1.5 py-1 text-left transition hover:bg-blue-50 disabled:cursor-default disabled:hover:bg-transparent"
@@ -158,7 +158,7 @@ export default function TodoTable({
                               <select
                                 value={todo.status}
                                 disabled={readOnly}
-                                onChange={(event) => void changeStatus(todo, event.target.value as TodoStatus)}
+                                onChange={(event) => void onChangeStatus(todo, event.target.value as TodoStatus)}
                                 className={`rounded px-2 py-1 text-xs outline-none ${STATUS_META[todo.status].className}`}
                               >
                                 {Object.entries(STATUS_META).map(([value, meta]) => (
@@ -178,10 +178,10 @@ export default function TodoTable({
                             </td>
                             <td className="border-b border-slate-100 px-3 py-3">
                               <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100">
-                                <button onClick={() => void openDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => openEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
+                                <button onClick={() => void onOpenDetails(todo)} title="详情与进展" className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800">\n                            <History size={15} />\n                          </button>\n                          <button onClick={() => onOpenEdit(todo)} disabled={readOnly} title="编辑" className="rounded p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
                                   <Pencil size={15} />
                                 </button>
-                                <button onClick={() => void deleteTodo(todo)} disabled={readOnly} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
+                                <button onClick={() => void onDelete(todo)} disabled={readOnly} title="删除" className="rounded p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-700">
                                   <Trash2 size={15} />
                                 </button>
                               </div>
