@@ -263,6 +263,40 @@ export default function ProjectManagement({
                   {selectedTodos.length === 0 && <p className="py-6 text-center text-xs text-slate-400">该项目还没有关联任务</p>}
                   {selectedTodos.length > 8 && <p className="pt-1 text-center text-xs text-slate-400">还有 {selectedTodos.length - 8} 项任务</p>}
                 </div>
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-600"><Users size={14} />项目成员</h3>
+                    <span className="text-xs text-slate-400">{projectMembers.length} 人</span>
+                  </div>
+                  {canManageMembers && !readOnly && (
+                    <form onSubmit={addProjectMember} className="mb-3 space-y-2 rounded-lg border border-slate-200 p-3">
+                      <label className="block text-xs text-slate-500">从当前工作空间添加成员
+                        <select required value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} className="mt-1 h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm">
+                          <option value="">选择成员</option>
+                          {workspaceMembers.filter((item) => !projectMembers.some((member) => member.id === item.id)).map((item) => <option key={item.id} value={item.email ?? ""}>{item.name || item.email} {item.email ? `· ${item.email}` : ""}</option>)}
+                        </select>
+                      </label>
+                      <div className="flex gap-2">
+                        <select value={memberRole} onChange={(event) => setMemberRole(event.target.value as "MEMBER" | "VIEWER")} className="h-9 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-xs">
+                          <option value="MEMBER">项目成员</option><option value="VIEWER">只读成员</option>
+                        </select>
+                        <button disabled={saving || !memberEmail} className="inline-flex h-9 items-center gap-1 rounded-md bg-blue-600 px-3 text-xs font-medium text-white disabled:opacity-50"><UserPlus size={13} />添加</button>
+                      </div>
+                    </form>
+                  )}
+                  {membersLoading ? <p className="py-3 text-center text-xs text-slate-400">正在读取成员...</p> : projectMembers.length ? (
+                    <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+                      {projectMembers.map((member) => <div key={member.id} className="flex items-center gap-2 px-2 py-2">
+                        <div className="min-w-0 flex-1"><div className="truncate text-xs font-medium text-slate-700">{member.name || "未设置姓名"}</div><div className="truncate text-[11px] text-slate-400">{member.email}</div></div>
+                        {canManageMembers && !readOnly && member.role !== "MANAGER" ? <select disabled={saving} value={member.role} onChange={(event) => void changeProjectMemberRole(member, event.target.value as ProjectMember["role"])} className="h-7 rounded border border-slate-200 bg-white px-1 text-[11px]">
+                          <option value="MEMBER">项目成员</option><option value="VIEWER">只读成员</option>
+                        </select> : <span className="text-[11px] text-slate-500">{PROJECT_ROLE_LABEL[member.role]}</span>}
+                        {canManageMembers && !readOnly && member.role !== "MANAGER" && <button type="button" disabled={saving} onClick={() => void removeProjectMember(member)} title="移出项目" className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={13} /></button>}
+                      </div>)}
+                    </div>
+                  ) : <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-400">尚未指定项目成员。当前工作空间成员均可访问。</p>}
+                  <p className="mt-2 text-[11px] leading-5 text-slate-400">指定成员后，只有项目成员和工作空间管理员可以访问项目任务；只读成员不能修改任务。</p>
+                </div>
               </div>
             </>
           ) : <div className="flex min-h-64 flex-col items-center justify-center px-5 text-center"><FolderKanban size={26} className="text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-600">选择一个项目</p><p className="mt-1 text-xs text-slate-400">查看项目说明、进度和关联任务</p></div>}
