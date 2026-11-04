@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DailyPlanPanel from "@/components/daily-plan-panel";
 import WorkspaceControls from "@/components/workspace-controls";
 import BlockerManagement from "@/components/blocker-management";
@@ -9,7 +9,6 @@ import { formatUpdatedAt, memberInitial, memberLabel } from "@/lib/member-utils"
 import {
   AlertCircle,
   CalendarDays,
-  Check,
   CheckCircle2,
   CircleHelp,
   Clock3,
