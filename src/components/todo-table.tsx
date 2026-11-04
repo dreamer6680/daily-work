@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { CheckCircle2, History, Pencil, Trash2, UserRound } from "lucide-react";
+import { History, Pencil, Trash2, UserRound } from "lucide-react";
 import AssigneeMentionPicker from "@/components/assignee-mention-picker";
 import { formatUpdatedAt, memberInitial, memberLabel } from "@/lib/member-utils";
 
