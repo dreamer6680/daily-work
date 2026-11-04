@@ -512,6 +512,14 @@ export default function Home() {
             </button>
           </div>
 
+          {error && (
+            <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {error}
+            </div>
+          )}
+
+          {taskScope === "today" && <DailyPlanPanel todos={todos} readOnly={readOnly} />}
+
           {taskScope !== "today" && (
             <>
           <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -533,14 +541,6 @@ export default function Home() {
               );
             })}
           </div>
-
-          {error && (
-            <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              {error}
-            </div>
-          )}
-
-          {taskScope === "today" && <DailyPlanPanel todos={todos} readOnly={readOnly} />}
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1 border-b border-slate-200">
