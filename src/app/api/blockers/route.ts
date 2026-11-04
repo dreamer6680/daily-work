@@ -72,9 +72,11 @@ export async function POST(request: NextRequest) {
           severity: input.severity,
           ownerId: input.ownerId ?? null,
           reportedById: user.id,
-          todoLinks: todoIds.length ? { create: todoIds.map((todoId) => ({ workspaceId: workspace.id, todoId })) } : undefined,
         },
       });
+      if (todoIds.length) {
+        await tx.blockerTodo.createMany({ data: todoIds.map((todoId) => ({ blockerId: created.id, todoId, workspaceId: workspace.id })) });
+      }
       await tx.blockerEvent.create({ data: { workspaceId: workspace.id, blockerId: created.id, actorId: user.id, eventType: BlockerEventType.CREATED, content: "创建阻塞问题" } });
       return tx.blocker.findUniqueOrThrow({
         where: { id: created.id },
