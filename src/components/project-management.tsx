@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { Archive, FolderKanban, Pencil, Plus, Save, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Archive, FolderKanban, Pencil, Plus, Save, X, Users, UserPlus, Trash2 } from "lucide-react";
 
 type Project = {
   id: string;
@@ -27,6 +27,9 @@ const STATUS_LABEL: Record<Project["status"], string> = {
   PAUSED: "已暂停",
   DONE: "已完成",
 };
+type ProjectMember = { id: string; name: string | null; email: string | null; role: "MANAGER" | "MEMBER" | "VIEWER" };
+type WorkspaceMember = { id: string; name: string | null; email: string | null };
+const PROJECT_ROLE_LABEL = { MANAGER: "项目负责人", MEMBER: "项目成员", VIEWER: "只读成员" };
 const COLORS = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#e11d48", "#64748b"];
 
 export default function ProjectManagement({
@@ -51,9 +54,86 @@ export default function ProjectManagement({
   const [status, setStatus] = useState<Project["status"]>("IN_PROGRESS");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
+  const [canManageMembers, setCanManageMembers] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberRole, setMemberRole] = useState<"MEMBER" | "VIEWER">("MEMBER");
+  const [membersLoading, setMembersLoading] = useState(false);
 
   const selected = projects.find((project) => project.id === selectedId) ?? null;
   const selectedTodos = useMemo(() => todos.filter((todo) => todo.project?.id === selectedId), [todos, selectedId]);
+  useEffect(() => {
+    if (!selectedId) { setProjectMembers([]); setWorkspaceMembers([]); return; }
+    let cancelled = false;
+    setMembersLoading(true);
+    fetch(`/api/projects/${selectedId}/members`, { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "读取项目成员失败");
+        if (!cancelled) {
+          setProjectMembers(result.data.members);
+          setWorkspaceMembers(result.data.workspaceMembers);
+          setCanManageMembers(result.data.canManage);
+        }
+      })
+      .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : "读取项目成员失败"); })
+      .finally(() => { if (!cancelled) setMembersLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedId]);
+
+  async function addProjectMember(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedId || !memberEmail.trim()) return;
+    setSaving(true); setError("");
+    try {
+      const response = await fetch(`/api/projects/${selectedId}/members`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: memberEmail.trim(), role: memberRole }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "添加项目成员失败");
+      setMemberEmail("");
+      const refreshed = await fetch(`/api/projects/${selectedId}/members`, { cache: "no-store" });
+      const data = await refreshed.json();
+      if (!refreshed.ok) throw new Error(data.error || "刷新项目成员失败");
+      setProjectMembers(data.data.members);
+      setWorkspaceMembers(data.data.workspaceMembers);
+      setCanManageMembers(data.data.canManage);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "添加项目成员失败");
+    } finally { setSaving(false); }
+  }
+
+  async function changeProjectMemberRole(member: ProjectMember, role: ProjectMember["role"]) {
+    if (!selectedId) return;
+    setSaving(true); setError("");
+    try {
+      const response = await fetch(`/api/projects/${selectedId}/members/${member.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "更新项目角色失败");
+      setProjectMembers((current) => current.map((item) => item.id === member.id ? { ...item, role } : item));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "更新项目角色失败");
+    } finally { setSaving(false); }
+  }
+
+  async function removeProjectMember(member: ProjectMember) {
+    if (!selectedId || !window.confirm(`确定将 ${member.name || member.email || "该成员"} 移出项目吗？`)) return;
+    setSaving(true); setError("");
+    try {
+      const response = await fetch(`/api/projects/${selectedId}/members/${member.id}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "移除项目成员失败");
+      setProjectMembers((current) => current.filter((item) => item.id !== member.id));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "移除项目成员失败");
+    } finally { setSaving(false); }
+  }
+
 
   function startCreate() {
     setEditingId(null); setName(""); setDescription(""); setColor(COLORS[0]); setStatus("IN_PROGRESS");
