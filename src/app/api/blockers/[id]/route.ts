@@ -66,7 +66,21 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         await tx.blockerEvent.create({ data: { workspaceId: workspace.id, blockerId: id, actorId: user.id, eventType, fromStatus: existing.status, toStatus: input.status } });
       }
       if (ownerChanged) {
-        await tx.blockerEvent.create({ data: { workspaceId: workspace.id, blockerId: id, actorId: user.id, eventType: BlockerEventType.OWNER_CHANGED, content: input.ownerId ? "更新处理负责人" : "移除处理负责人" } });
+        const [previousOwner, nextOwner] = await Promise.all([
+          existing.ownerId ? tx.user.findUnique({ where: { id: existing.ownerId }, select: { name: true, email: true } }) : null,
+          input.ownerId ? tx.user.findUnique({ where: { id: input.ownerId }, select: { name: true, email: true } }) : null,
+        ]);
+        const displayName = (person: { name: string | null; email: string | null } | null) =>
+          person?.name?.trim() || person?.email || "未分配";
+        await tx.blockerEvent.create({
+          data: {
+            workspaceId: workspace.id,
+            blockerId: id,
+            actorId: user.id,
+            eventType: BlockerEventType.OWNER_CHANGED,
+            content: `处理负责人：${displayName(previousOwner)} → ${displayName(nextOwner)}`,
+          },
+        });
       }
       return tx.blocker.findUniqueOrThrow({
         where: { id },
