@@ -432,10 +432,29 @@ export default function Home() {
         </div>
         <nav className="space-y-1">
           {projects.map((project) => (
-            <div key={project.id} className="flex h-9 items-center gap-2 rounded-md px-3 text-sm text-slate-600">
+            <button
+              key={project.id}
+              type="button"
+              onClick={() => {
+                setActiveView("tasks");
+                setTaskScope("all");
+                setTaskView("table");
+                setProjectFilter(project.id);
+                setAssigneeFilter("ALL");
+                setStatusFilter("ALL");
+                setPriorityFilter("ALL");
+                setKeyword("");
+              }}
+              aria-current={activeView === "tasks" && taskScope === "all" && projectFilter === project.id ? "page" : undefined}
+              className={`flex h-9 w-full items-center gap-2 rounded-md px-3 text-left text-sm transition-colors ${
+                activeView === "tasks" && taskScope === "all" && projectFilter === project.id
+                  ? "bg-blue-50 font-medium text-blue-700"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
               <FolderKanban size={16} strokeWidth={1.8} />
               <span className="truncate">{project.name}</span>
-            </div>
+            </button>
           ))}
         </nav>
 
