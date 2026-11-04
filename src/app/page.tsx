@@ -133,6 +133,8 @@ export default function Home() {
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | TodoStatus>("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<"ALL" | Priority>("ALL");
+  const [projectFilter, setProjectFilter] = useState("ALL");
   const [assigneeFilter, setAssigneeFilter] = useState("ALL");
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -193,15 +195,17 @@ export default function Home() {
     return todos.filter((todo) => {
       const matchesStatus = statusFilter === "ALL" || todo.status === statusFilter;
       const matchesAssignee = assigneeFilter === "ALL" || (assigneeFilter === "UNASSIGNED" ? todo.assignees.length === 0 : todo.assignees.some((item) => item.user.id === assigneeFilter));
+      const matchesPriority = priorityFilter === "ALL" || todo.priority === priorityFilter;
+      const matchesProject = projectFilter === "ALL" || todo.project?.id === projectFilter;
       const matchesKeyword =
         !normalizedKeyword ||
         todo.title.toLowerCase().includes(normalizedKeyword) ||
         (todo.currentProgressTitle ?? "").toLowerCase().includes(normalizedKeyword) ||
         (todo.currentProgressNote ?? "").toLowerCase().includes(normalizedKeyword) ||
         (todo.project?.name ?? "").toLowerCase().includes(normalizedKeyword);
-      return matchesStatus && matchesAssignee && matchesKeyword;
+      return matchesStatus && matchesAssignee && matchesPriority && matchesProject && matchesKeyword;
     });
-  }, [todos, keyword, statusFilter, assigneeFilter]);
+  }, [todos, keyword, statusFilter, assigneeFilter, priorityFilter, projectFilter]);
 
   const stats = useMemo(
     () => ({
@@ -415,9 +419,9 @@ export default function Home() {
 
         <WorkspaceControls />
         <nav className="space-y-1">
-          <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks" && taskScope === "all"} onClick={() => { setActiveView("tasks"); setTaskScope("all"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setKeyword(""); }} />
-          <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks" && taskScope === "today"} onClick={() => { setActiveView("tasks"); setTaskScope("today"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); }} />
-          <NavItem icon={Users} label="我负责的" active={activeView === "tasks" && taskScope === "mine"} onClick={() => { setTaskScope("mine"); setAssigneeFilter(currentUserId || "ALL"); setStatusFilter("ALL"); setKeyword(""); setActiveView("tasks"); setTaskView("table"); }} />
+          <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks" && taskScope === "all"} onClick={() => { setActiveView("tasks"); setTaskScope("all"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setPriorityFilter("ALL"); setProjectFilter("ALL"); setKeyword(""); }} />
+          <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks" && taskScope === "today"} onClick={() => { setActiveView("tasks"); setTaskScope("today"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setPriorityFilter("ALL"); setProjectFilter("ALL"); }} />
+          <NavItem icon={Users} label="我负责的" active={activeView === "tasks" && taskScope === "mine"} onClick={() => { setTaskScope("mine"); setAssigneeFilter(currentUserId || "ALL"); setStatusFilter("ALL"); setPriorityFilter("ALL"); setProjectFilter("ALL"); setKeyword(""); setActiveView("tasks"); setTaskView("table"); }} />
           <NavItem icon={Clock3} label="最近更新" active={activeView === "tasks" && taskScope === "recent"} onClick={() => { setTaskScope("recent"); setAssigneeFilter("ALL"); setKeyword(""); setActiveView("tasks"); setTaskView("timeline"); setStatusFilter("ALL"); }} />
           <NavItem icon={AlertCircle} label="阻塞任务" active={activeView === "blockers"} onClick={() => setActiveView("blockers")} />
         </nav>
@@ -532,6 +536,8 @@ export default function Home() {
                   {members.map((member) => <option key={member.id} value={member.id}>{memberLabel(member)}</option>)}
                 </select>
               </label>
+              <select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none"><option value="ALL">全部项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
+              <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as "ALL" | Priority)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none"><option value="ALL">全部优先级</option>{Object.entries(PRIORITY_LABEL).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as "ALL" | TodoStatus)}
