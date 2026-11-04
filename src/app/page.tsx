@@ -123,6 +123,7 @@ function NavItem({
 export default function Home() {
   const [activeView, setActiveView] = useState<"tasks" | "blockers">("tasks");
   const [taskView, setTaskView] = useState<"table" | "kanban" | "timeline">("table");
+  const [taskScope, setTaskScope] = useState<"all" | "today" | "mine" | "recent">("today");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
@@ -414,10 +415,10 @@ export default function Home() {
 
         <WorkspaceControls />
         <nav className="space-y-1">
-          <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks" && taskView === "table" && assigneeFilter === "ALL"} onClick={() => { setActiveView("tasks"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setKeyword(""); }} />
-          <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks" && taskView === "table" && assigneeFilter === "ALL"} onClick={() => { setActiveView("tasks"); setTaskView("table"); }} />
-          <NavItem icon={Users} label="我负责的" active={activeView === "tasks" && assigneeFilter === currentUserId && Boolean(currentUserId)} onClick={() => { setAssigneeFilter(currentUserId || "ALL"); setActiveView("tasks"); setTaskView("table"); }} />
-          <NavItem icon={Clock3} label="最近更新" active={activeView === "tasks" && taskView === "timeline"} onClick={() => { setActiveView("tasks"); setTaskView("timeline"); setStatusFilter("ALL"); }} />
+          <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks" && taskScope === "all"} onClick={() => { setActiveView("tasks"); setTaskScope("all"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setKeyword(""); }} />
+          <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks" && taskScope === "today"} onClick={() => { setActiveView("tasks"); setTaskScope("today"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); }} />
+          <NavItem icon={Users} label="我负责的" active={activeView === "tasks" && taskScope === "mine"} onClick={() => { setTaskScope("mine"); setAssigneeFilter(currentUserId || "ALL"); setActiveView("tasks"); setTaskView("table"); }} />
+          <NavItem icon={Clock3} label="最近更新" active={activeView === "tasks" && taskScope === "recent"} onClick={() => { setTaskScope("recent"); setActiveView("tasks"); setTaskView("timeline"); setStatusFilter("ALL"); }} />
           <NavItem icon={AlertCircle} label="阻塞任务" active={activeView === "blockers"} onClick={() => setActiveView("blockers")} />
         </nav>
 
@@ -445,7 +446,7 @@ export default function Home() {
         <header className="flex h-14 items-center justify-between border-b border-slate-200 px-5">
           <div className="text-sm text-slate-500">
             工作空间 <span className="px-1">/</span>
-            <span className="font-medium text-slate-800">{activeView === "blockers" ? "阻塞问题" : "今日待办"}</span>
+            <span className="font-medium text-slate-800">{activeView === "blockers" ? "阻塞问题" : taskScope === "all" ? "全部任务" : taskScope === "mine" ? "我负责的" : taskScope === "recent" ? "最近更新" : "今日待办"}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative hidden sm:block">
@@ -475,10 +476,8 @@ export default function Home() {
         <div className="p-5 md:p-8">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">今日待办</h1>
-              <p className="mt-1 text-sm text-slate-500">
-                查看今天计划处理的任务和最新进展
-              </p>
+              <h1 className="text-xl font-semibold tracking-tight">{taskScope === "all" ? "全部任务" : taskScope === "mine" ? "我负责的" : taskScope === "recent" ? "最近更新" : "今日待办"}</h1>
+              <p className="mt-1 text-sm text-slate-500">{taskScope === "today" ? "查看今天计划处理的任务和最新进展" : taskScope === "mine" ? "只显示分配给当前成员的任务" : taskScope === "recent" ? "按最近更新时间查看任务进展" : "查看当前工作空间的全部任务"}</p>
             </div>
             <button
               onClick={openCreate}
@@ -516,7 +515,7 @@ export default function Home() {
             </div>
           )}
 
-          <DailyPlanPanel todos={todos} readOnly={readOnly} />
+          {taskScope === "today" && <DailyPlanPanel todos={todos} readOnly={readOnly} />}
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1 border-b border-slate-200">
