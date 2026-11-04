@@ -7,6 +7,8 @@ import BlockerManagement from "@/components/blocker-management";
 import TodoComposer from "@/components/todo-composer";
 import TodoDetailDrawer from "@/components/todo-detail-drawer";
 import TodoTable from "@/components/todo-table";
+import TodoKanbanBoard from "@/components/todo-kanban-board";
+import TodoTimeline from "@/components/todo-timeline";
 import { memberLabel } from "@/lib/member-utils";
 import {
   AlertCircle,
@@ -120,6 +122,7 @@ function NavItem({
 
 export default function Home() {
   const [activeView, setActiveView] = useState<"tasks" | "blockers">("tasks");
+  const [taskView, setTaskView] = useState<"table" | "kanban" | "timeline">("table");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
@@ -515,11 +518,9 @@ export default function Home() {
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1 border-b border-slate-200">
-              <span className="border-b-2 border-blue-600 px-3 py-2 text-sm font-medium text-blue-700">
-                <span className="mr-2">▦</span>表格视图
-              </span>
-              <span className="px-3 py-2 text-sm text-slate-400">看板视图</span>
-              <span className="px-3 py-2 text-sm text-slate-400">时间线</span>
+              <button type="button" onClick={() => setTaskView("table")} className={`border-b-2 px-3 py-2 text-sm ${taskView === "table" ? "border-blue-600 font-medium text-blue-700" : "border-transparent text-slate-400 hover:text-slate-700"}`}>▦ 表格视图</button>
+              <button type="button" onClick={() => setTaskView("kanban")} className={`border-b-2 px-3 py-2 text-sm ${taskView === "kanban" ? "border-blue-600 font-medium text-blue-700" : "border-transparent text-slate-400 hover:text-slate-700"}`}>看板视图</button>
+              <button type="button" onClick={() => setTaskView("timeline")} className={`border-b-2 px-3 py-2 text-sm ${taskView === "timeline" ? "border-blue-600 font-medium text-blue-700" : "border-transparent text-slate-400 hover:text-slate-700"}`}>时间线</button>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500 shadow-sm">
@@ -546,7 +547,13 @@ export default function Home() {
             </div>
           </div>
 
-          <TodoTable loading={loading} todos={todos} visibleTodos={visibleTodos} members={members} readOnly={readOnly} editingAssigneesTodoId={editingAssigneesTodoId} assigneeDraftIds={assigneeDraftIds} setAssigneeDraftIds={setAssigneeDraftIds} assigneeSavingTodoId={assigneeSavingTodoId} onStartAssigneeEdit={startAssigneeEdit} onCancelAssigneeEdit={() => { setEditingAssigneesTodoId(null); setAssigneeDraftIds([]); }} onSaveAssignees={saveAssignees} onChangeStatus={changeStatus} onOpenDetails={openDetails} onOpenEdit={openEdit} onDelete={deleteTodo} />
+          {taskView === "table" ? (
+            <TodoTable loading={loading} todos={todos} visibleTodos={visibleTodos} members={members} readOnly={readOnly} editingAssigneesTodoId={editingAssigneesTodoId} assigneeDraftIds={assigneeDraftIds} setAssigneeDraftIds={setAssigneeDraftIds} assigneeSavingTodoId={assigneeSavingTodoId} onStartAssigneeEdit={startAssigneeEdit} onCancelAssigneeEdit={() => { setEditingAssigneesTodoId(null); setAssigneeDraftIds([]); }} onSaveAssignees={saveAssignees} onChangeStatus={changeStatus} onOpenDetails={openDetails} onOpenEdit={openEdit} onDelete={deleteTodo} />
+          ) : taskView === "kanban" ? (
+            <TodoKanbanBoard todos={visibleTodos} loading={loading} readOnly={readOnly} onOpenDetails={openDetails} onOpenEdit={openEdit} onChangeStatus={changeStatus} />
+          ) : (
+            <TodoTimeline todos={visibleTodos} loading={loading} readOnly={readOnly} onOpenDetails={openDetails} onOpenEdit={openEdit} />
+          )}
           <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
             <CheckCircle2 size={14} />
             数据来自 PostgreSQL；新建、编辑、状态变更和软删除均通过服务端 API 完成。
