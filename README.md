@@ -6,14 +6,14 @@
 
 - Node.js 20.9+
 - Docker Desktop
-- npm
+- pnpm 10+
 
 ## 启动步骤
 
 ### 1. 安装依赖
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. 配置环境变量
@@ -34,8 +34,8 @@ PostgreSQL 映射到本机 `5433` 端口，避免与本机已有 MySQL/PostgreSQ
 ### 4. 校验 Prisma Schema 并生成客户端
 
 ```bash
-npx prisma validate
-npx prisma generate
+pnpm exec prisma validate
+pnpm exec prisma generate
 ```
 
 ### 5. 创建数据库迁移
@@ -43,7 +43,7 @@ npx prisma generate
 首次初始化数据库时执行：
 
 ```bash
-npx prisma migrate dev --name init
+pnpm exec prisma migrate dev --name init
 ```
 
 已有迁移时不要重复创建 init migration。
@@ -51,7 +51,7 @@ npx prisma migrate dev --name init
 ### 6. 启动 Next.js
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 访问 http://localhost:3000
@@ -84,9 +84,9 @@ npm run dev
 ## 常用命令
 
 ```bash
-npm run db:studio
-npm run typecheck
-npm run build
+pnpm db:studio
+pnpm typecheck
+pnpm build
 docker compose logs -f postgres
 docker compose down
 ```
