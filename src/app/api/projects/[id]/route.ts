@@ -17,7 +17,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { user, workspace, role } = await getDemoContext();
+    const { workspace, role } = await getDemoContext();
     if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能修改项目" }, { status: 403 });
     const { id } = await context.params;
     const parsed = updateSchema.safeParse(await request.json().catch(() => null));
