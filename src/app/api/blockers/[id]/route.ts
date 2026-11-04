@@ -56,9 +56,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         if (todoIds.length) await tx.blockerTodo.createMany({ data: todoIds.map((todoId) => ({ blockerId: id, todoId, workspaceId: workspace.id })) });
       }
       if (statusChanged) {
+        const reopening = existing.status === BlockerStatus.RESOLVED &&
+          (input.status === BlockerStatus.OPEN || input.status === BlockerStatus.INVESTIGATING || input.status === BlockerStatus.WAITING);
         const eventType = input.status === BlockerStatus.RESOLVED
           ? BlockerEventType.RESOLVED
-          : existing.status === BlockerStatus.RESOLVED
+          : reopening
             ? BlockerEventType.REOPENED
             : BlockerEventType.STATUS_CHANGED;
         await tx.blockerEvent.create({ data: { workspaceId: workspace.id, blockerId: id, actorId: user.id, eventType, fromStatus: existing.status, toStatus: input.status } });
