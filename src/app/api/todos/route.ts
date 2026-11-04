@@ -3,6 +3,7 @@ import { ProgressEventType, Priority, TodoStatus } from "@prisma/client";
 import { z } from "zod";
 import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
+import { getProjectAccess } from "@/lib/project-access";
 
 export const runtime = "nodejs";
 
@@ -19,9 +20,9 @@ const createTodoSchema = z.object({
 
 export async function GET() {
   try {
-    const { workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
     const todos = await prisma.todo.findMany({
-      where: { workspaceId: workspace.id, deletedAt: null },
+      where: { workspaceId: workspace.id, deletedAt: null, ...(role === "OWNER" || role === "ADMIN" ? {} : { OR: [{ projectId: null }, { project: { members: { none: {} } } }, { project: { members: { some: { userId: user.id } } } }] }) },
       include: { project: { select: { id: true, name: true, color: true } }, assignees: { include: { user: { select: { id: true, name: true, email: true } } } } },
       orderBy: { updatedAt: "desc" },
     });
@@ -56,6 +57,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (input.projectId) {
+      const access = await getProjectAccess(input.projectId, workspace.id, user.id, role);
+      if (!access.exists) return NextResponse.json({ error: "所选项目不存在" }, { status: 400 });
+      if (!access.canWrite) return NextResponse.json({ error: "你没有在该项目创建任务的权限" }, { status: 403 });
       const project = await prisma.project.findFirst({
         where: { id: input.projectId, workspaceId: workspace.id },
         select: { id: true },
