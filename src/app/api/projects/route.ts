@@ -14,9 +14,9 @@ const projectSchema = z.object({
 
 export async function GET() {
   try {
-    const { workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
     const projects = await prisma.project.findMany({
-      where: { workspaceId: workspace.id, status: { not: ProjectStatus.ARCHIVED } },
+      where: { workspaceId: workspace.id, status: { not: ProjectStatus.ARCHIVED }, ...(role === "OWNER" || role === "ADMIN" ? {} : { OR: [{ members: { none: {} } }, { members: { some: { userId: user.id } } }] }) },
       orderBy: [{ updatedAt: "desc" }],
       include: { _count: { select: { todos: true } } },
     });
