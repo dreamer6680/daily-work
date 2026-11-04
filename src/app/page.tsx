@@ -126,6 +126,7 @@ export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -171,6 +172,7 @@ export default function Home() {
       if (!meResponse.ok) throw new Error(meJson.error ?? "读取用户信息失败");
       if (!membersResponse.ok) throw new Error(membersJson.error ?? "读取工作空间成员失败");
       setReadOnly(meJson.data.role === "VIEWER");
+      setCurrentUserId(meJson.data.user.id);
       setTodos(todoJson.data);
       setProjects(projectJson.data);
       setMembers(membersJson.data.members);
@@ -412,10 +414,10 @@ export default function Home() {
 
         <WorkspaceControls />
         <nav className="space-y-1">
-          <NavItem icon={Inbox} label="全部任务" onClick={() => setActiveView("tasks")} />
-          <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks"} onClick={() => setActiveView("tasks")} />
-          <NavItem icon={Users} label="我负责的" onClick={() => { setAssigneeFilter("ALL"); setActiveView("tasks"); }} />
-          <NavItem icon={Clock3} label="最近更新" onClick={() => setActiveView("tasks")} />
+          <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks" && taskView === "table" && assigneeFilter === "ALL"} onClick={() => { setActiveView("tasks"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setKeyword(""); }} />
+          <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks" && taskView === "table" && assigneeFilter === "ALL"} onClick={() => { setActiveView("tasks"); setTaskView("table"); }} />
+          <NavItem icon={Users} label="我负责的" active={activeView === "tasks" && assigneeFilter === currentUserId && Boolean(currentUserId)} onClick={() => { setAssigneeFilter(currentUserId || "ALL"); setActiveView("tasks"); setTaskView("table"); }} />
+          <NavItem icon={Clock3} label="最近更新" active={activeView === "tasks" && taskView === "timeline"} onClick={() => { setActiveView("tasks"); setTaskView("timeline"); setStatusFilter("ALL"); }} />
           <NavItem icon={AlertCircle} label="阻塞任务" active={activeView === "blockers"} onClick={() => setActiveView("blockers")} />
         </nav>
 
