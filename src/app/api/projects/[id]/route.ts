@@ -3,6 +3,7 @@ import { ProjectStatus } from "@prisma/client";
 import { z } from "zod";
 import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
+import { getProjectAccess } from "@/lib/project-access";
 
 export const runtime = "nodejs";
 
@@ -17,9 +18,11 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { workspace, role } = await getDemoContext();
-    if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能修改项目" }, { status: 403 });
+    const { user, workspace, role } = await getDemoContext();
     const { id } = await context.params;
+    const access = await getProjectAccess(id, workspace.id, user.id, role);
+    if (!access.exists) return NextResponse.json({ error: "项目不存在" }, { status: 404 });
+    if (!access.canManage) return NextResponse.json({ error: "没有管理该项目的权限" }, { status: 403 });
     const parsed = updateSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) {
       return NextResponse.json({ error: parsed.success ? "没有需要更新的内容" : parsed.error.issues[0]?.message ?? "请求参数不正确" }, { status: 400 });
@@ -45,9 +48,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
-    const { workspace, role } = await getDemoContext();
-    if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能归档项目" }, { status: 403 });
+    const { user, workspace, role } = await getDemoContext();
     const { id } = await context.params;
+    const access = await getProjectAccess(id, workspace.id, user.id, role);
+    if (!access.exists) return NextResponse.json({ error: "项目不存在" }, { status: 404 });
+    if (!access.canManage) return NextResponse.json({ error: "没有管理该项目的权限" }, { status: 403 });
     const existing = await prisma.project.findFirst({ where: { id, workspaceId: workspace.id }, select: { id: true } });
     if (!existing) return NextResponse.json({ error: "项目不存在" }, { status: 404 });
     const project = await prisma.project.update({
