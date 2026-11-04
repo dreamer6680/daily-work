@@ -422,7 +422,7 @@ export default function Home() {
           <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks" && taskScope === "all"} onClick={() => { setActiveView("tasks"); setTaskScope("all"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setPriorityFilter("ALL"); setProjectFilter("ALL"); setKeyword(""); }} />
           <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks" && taskScope === "today"} onClick={() => { setActiveView("tasks"); setTaskScope("today"); setTaskView("table"); setAssigneeFilter("ALL"); setStatusFilter("ALL"); setPriorityFilter("ALL"); setProjectFilter("ALL"); }} />
           <NavItem icon={Users} label="我负责的" active={activeView === "tasks" && taskScope === "mine"} onClick={() => { setTaskScope("mine"); setAssigneeFilter(currentUserId || "ALL"); setStatusFilter("ALL"); setPriorityFilter("ALL"); setProjectFilter("ALL"); setKeyword(""); setActiveView("tasks"); setTaskView("table"); }} />
-          <NavItem icon={Clock3} label="最近更新" active={activeView === "tasks" && taskScope === "recent"} onClick={() => { setTaskScope("recent"); setAssigneeFilter("ALL"); setKeyword(""); setActiveView("tasks"); setTaskView("timeline"); setStatusFilter("ALL"); }} />
+          <NavItem icon={Clock3} label="最近更新" active={activeView === "tasks" && taskScope === "recent"} onClick={() => { setTaskScope("recent"); setAssigneeFilter("ALL"); setPriorityFilter("ALL"); setProjectFilter("ALL"); setKeyword(""); setActiveView("tasks"); setTaskView("timeline"); setStatusFilter("ALL"); }} />
           <NavItem icon={AlertCircle} label="阻塞任务" active={activeView === "blockers"} onClick={() => setActiveView("blockers")} />
         </nav>
 
