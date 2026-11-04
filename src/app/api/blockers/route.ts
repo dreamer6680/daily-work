@@ -3,6 +3,7 @@ import { BlockerEventType, BlockerSeverity, BlockerStatus } from "@prisma/client
 import { z } from "zod";
 import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
+import { getProjectAccess } from "@/lib/project-access";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ const createSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
     const query = request.nextUrl.searchParams;
     const status = query.get("status");
     const severity = query.get("severity");
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       include: {
         reportedBy: { select: { id: true, name: true, email: true } },
         owner: { select: { id: true, name: true, email: true } },
-        todoLinks: { include: { todo: { select: { id: true, title: true, status: true } } } },
+        todoLinks: { where: { todo: { deletedAt: null, ...(role === "OWNER" || role === "ADMIN" ? {} : { OR: [{ projectId: null }, { project: { members: { none: {} } } }, { project: { members: { some: { userId: user.id } } } }] }) } }, include: { todo: { select: { id: true, title: true, status: true } } } },
         events: { orderBy: { createdAt: "desc" }, take: 30, include: { actor: { select: { id: true, name: true, email: true } } } },
       },
       orderBy: [{ severity: "desc" }, { updatedAt: "desc" }],
@@ -58,8 +59,14 @@ export async function POST(request: NextRequest) {
       if (!owner) return NextResponse.json({ error: "处理负责人必须是当前工作空间成员" }, { status: 400 });
     }
     if (todoIds.length) {
-      const count = await prisma.todo.count({ where: { id: { in: todoIds }, workspaceId: workspace.id, deletedAt: null } });
-      if (count !== todoIds.length) return NextResponse.json({ error: "关联任务必须属于当前工作空间且未删除" }, { status: 400 });
+      const linkedTodos = await prisma.todo.findMany({ where: { id: { in: todoIds }, workspaceId: workspace.id, deletedAt: null }, select: { id: true, projectId: true } });
+      if (linkedTodos.length !== todoIds.length) return NextResponse.json({ error: "关联任务必须属于当前工作空间且未删除" }, { status: 400 });
+      for (const todo of linkedTodos) {
+        if (todo.projectId) {
+          const access = await getProjectAccess(todo.projectId, workspace.id, user.id, role);
+          if (!access.canWrite) return NextResponse.json({ error: "你没有关联该项目任务的权限" }, { status: 403 });
+        }
+      }
     }
     const blocker = await prisma.$transaction(async (tx) => {
       const created = await tx.blocker.create({
