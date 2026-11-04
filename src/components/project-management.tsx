@@ -1,14 +1,14 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Archive, ArrowLeft, FolderKanban, Pencil, Plus, Save, X } from "lucide-react";
+import { Archive, FolderKanban, Pencil, Plus, Save, X } from "lucide-react";
 
 type Project = {
   id: string;
   name: string;
   description: string | null;
   color: string | null;
-  status: "IN_PROGRESS" | "PAUSED" | "DONE";
+  status?: "IN_PROGRESS" | "PAUSED" | "DONE";
   taskCount?: number;
   completedCount?: number;
   createdAt?: string;
@@ -153,7 +153,7 @@ export default function ProjectManagement({
                 <div className="flex items-start gap-3">
                   <span className="mt-0.5 h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: project.color ?? "#64748b" }} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2"><span className="truncate text-sm font-semibold text-slate-800">{project.name}</span><span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">{STATUS_LABEL[project.status]}</span></div>
+                    <div className="flex items-center justify-between gap-2"><span className="truncate text-sm font-semibold text-slate-800">{project.name}</span><span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">{STATUS_LABEL[project.status ?? "IN_PROGRESS"]}</span></div>
                     <p className="mt-1 min-h-10 line-clamp-2 text-xs leading-5 text-slate-500">{project.description || "暂无项目描述"}</p>
                     <div className="mt-3 flex items-center justify-between text-xs text-slate-500"><span>{projectTodos.length} 个任务</span><span>{done} 个已完成</span></div>
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-500" style={{ width: `${progress}%` }} /></div>
