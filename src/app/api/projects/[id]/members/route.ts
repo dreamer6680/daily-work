@@ -50,10 +50,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (existing) return NextResponse.json({ error: "该用户已经是项目成员" }, { status: 409 });
     await prisma.$transaction(async tx => {
       const memberCount = await tx.projectMember.count({ where: { projectId: id } });
-      if (memberCount === 0 && access.project?.createdById !== target.id) {
-        await tx.projectMember.create({ data: { projectId: id, userId: access.project!.createdById, role: ProjectMemberRole.MANAGER } });
+      if (memberCount === 0) {
+        if (access.project?.createdById !== target.id) {
+          await tx.projectMember.create({ data: { projectId: id, userId: access.project!.createdById, role: ProjectMemberRole.MANAGER } });
+          await tx.projectMember.create({ data: { projectId: id, userId: target.id, role: parsed.data.role } });
+        } else {
+          await tx.projectMember.create({ data: { projectId: id, userId: target.id, role: ProjectMemberRole.MANAGER } });
+        }
+      } else {
+        await tx.projectMember.create({ data: { projectId: id, userId: target.id, role: parsed.data.role } });
       }
-      await tx.projectMember.create({ data: { projectId: id, userId: target.id, role: parsed.data.role } });
     });
     return NextResponse.json({ data: { success: true } }, { status: 201 });
   } catch (error) {
