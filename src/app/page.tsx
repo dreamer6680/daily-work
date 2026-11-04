@@ -4,11 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DailyPlanPanel from "@/components/daily-plan-panel";
 import WorkspaceControls from "@/components/workspace-controls";
 import BlockerManagement from "@/components/blocker-management";
-import AssigneeMentionPicker from "@/components/assignee-mention-picker";
 import TodoComposer from "@/components/todo-composer";
 import TodoDetailDrawer from "@/components/todo-detail-drawer";
 import TodoTable from "@/components/todo-table";
-import { formatUpdatedAt, memberInitial, memberLabel } from "@/lib/member-utils";
+import { memberLabel } from "@/lib/member-utils";
 import {
   AlertCircle,
   CalendarDays,
@@ -17,15 +16,10 @@ import {
   Clock3,
   FolderKanban,
   Inbox,
-  History,
   LogOut,
-  Pencil,
   Plus,
   Search,
-  Trash2,
   Users,
-  UserRound,
-  X,
 } from "lucide-react";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "PAUSED" | "DONE" | "CANCELED";
