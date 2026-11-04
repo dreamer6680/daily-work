@@ -74,7 +74,7 @@ export default function TodoDetailDrawer({
                       <div className="text-xs text-slate-400">任务详情</div>
                       <h2 className="mt-1 text-lg font-semibold">{detail.title}</h2>
                     </div>
-                    <button onClick={() => setDetail(null)} className="rounded p-2 text-slate-400 hover:bg-slate-100" aria-label="关闭详情">
+                    <button onClick={onClose} className="rounded p-2 text-slate-400 hover:bg-slate-100" aria-label="关闭详情">
                       <X size={18} />
                     </button>
                   </header>
@@ -109,7 +109,7 @@ export default function TodoDetailDrawer({
                       <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
                         <History size={16} /> 更新当前进展
                       </h3>
-                      <form onSubmit={submitProgress} className="space-y-3 rounded-lg border border-slate-200 p-4">
+                      <form onSubmit={onSubmitProgress} className="space-y-3 rounded-lg border border-slate-200 p-4">
                         <input
                           value={progressTitle}
                           disabled={readOnly}
