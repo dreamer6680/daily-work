@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
+import { getProjectAccess } from "@/lib/project-access";
 
 export const runtime = "nodejs";
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -21,13 +22,13 @@ const schema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
     const value = request.nextUrl.searchParams.get("date");
     if (!value) return NextResponse.json({ error: "请提供计划日期" }, { status: 400 });
     const planDate = parseDate(value);
     if (!planDate) return NextResponse.json({ error: "日期无效" }, { status: 400 });
     const data = await prisma.todoDailyPlan.findMany({
-      where: { workspaceId: workspace.id, planDate, todo: { deletedAt: null } },
+      where: { workspaceId: workspace.id, planDate, todo: { deletedAt: null, ...(role === "OWNER" || role === "ADMIN" ? {} : { OR: [{ projectId: null }, { project: { members: { none: {} } } }, { project: { members: { some: { userId: user.id } } } }] }) } },
       include: { todo: { select: { id: true, title: true, status: true, project: { select: { name: true } } } } },
       orderBy: { createdAt: "asc" }
     });
@@ -49,9 +50,13 @@ export async function POST(request: NextRequest) {
     const planDate = parseDate(input.planDate);
     if (!planDate) return NextResponse.json({ error: "日期无效" }, { status: 400 });
     const todo = await prisma.todo.findFirst({
-      where: { id: input.todoId, workspaceId: workspace.id, deletedAt: null }, select: { id: true }
+      where: { id: input.todoId, workspaceId: workspace.id, deletedAt: null }, select: { id: true, projectId: true }
     });
     if (!todo) return NextResponse.json({ error: "关联任务不存在" }, { status: 404 });
+    if (todo.projectId) {
+      const access = await getProjectAccess(todo.projectId, workspace.id, user.id, role);
+      if (!access.canWrite) return NextResponse.json({ error: "你没有修改该项目每日计划的权限" }, { status: 403 });
+    }
     const data = await prisma.todoDailyPlan.upsert({
       where: { todoId_planDate: { todoId: input.todoId, planDate } },
       create: {
