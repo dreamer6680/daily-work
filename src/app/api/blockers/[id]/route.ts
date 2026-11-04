@@ -3,6 +3,7 @@ import { BlockerEventType, BlockerSeverity, BlockerStatus } from "@prisma/client
 import { z } from "zod";
 import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
+import { getProjectAccess } from "@/lib/project-access";
 
 export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ id: string }> };
@@ -33,8 +34,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
     const todoIds = input.todoIds === undefined ? undefined : [...new Set(input.todoIds)];
     if (todoIds) {
-      const count = todoIds.length ? await prisma.todo.count({ where: { id: { in: todoIds }, workspaceId: workspace.id, deletedAt: null } }) : 0;
-      if (count !== todoIds.length) return NextResponse.json({ error: "关联任务必须属于当前工作空间且未删除" }, { status: 400 });
+      const linkedTodos = todoIds.length ? await prisma.todo.findMany({ where: { id: { in: todoIds }, workspaceId: workspace.id, deletedAt: null }, select: { id: true, projectId: true } }) : [];
+      if (linkedTodos.length !== todoIds.length) return NextResponse.json({ error: "关联任务必须属于当前工作空间且未删除" }, { status: 400 });
+      for (const todo of linkedTodos) {
+        if (todo.projectId) {
+          const access = await getProjectAccess(todo.projectId, workspace.id, user.id, role);
+          if (!access.canWrite) return NextResponse.json({ error: "你没有关联该项目任务的权限" }, { status: 403 });
+        }
+      }
     }
     const statusChanged = input.status !== undefined && input.status !== existing.status;
     const ownerChanged = input.ownerId !== undefined && input.ownerId !== existing.ownerId;
