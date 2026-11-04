@@ -3,6 +3,7 @@ import { ProgressEventType, Priority, TodoStatus } from "@prisma/client";
 import { z } from "zod";
 import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
+import { getProjectAccess } from "@/lib/project-access";
 
 export const runtime = "nodejs";
 
@@ -22,9 +23,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { workspace } = await getDemoContext();
+    const { user, workspace, role } = await getDemoContext();
     const todo = await prisma.todo.findFirst({
-      where: { id, workspaceId: workspace.id, deletedAt: null },
+      where: { id, workspaceId: workspace.id, deletedAt: null, ...(role === "OWNER" || role === "ADMIN" ? {} : { OR: [{ projectId: null }, { project: { members: { none: {} } } }, { project: { members: { some: { userId: user.id } } } }] }) },
       include: {
         project: { select: { id: true, name: true, color: true } },
         assignees: { include: { user: { select: { id: true, name: true, email: true } } } },
@@ -69,6 +70,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (!existing) {
       return NextResponse.json({ error: "待办不存在" }, { status: 404 });
     }
+    if (existing.projectId) {
+      const access = await getProjectAccess(existing.projectId, workspace.id, user.id, role);
+      if (!access.canWrite) return NextResponse.json({ error: "你没有修改该项目任务的权限" }, { status: 403 });
+    }
 
     const input = parsed.data;
     if (input.assigneeIds !== undefined) {
@@ -77,6 +82,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       if (validMembers !== assigneeIds.length) return NextResponse.json({ error: "负责人必须是当前工作空间成员" }, { status: 400 });
     }
     if (input.projectId) {
+      const access = await getProjectAccess(input.projectId, workspace.id, user.id, role);
+      if (!access.exists) return NextResponse.json({ error: "所选项目不存在" }, { status: 400 });
+      if (!access.canWrite) return NextResponse.json({ error: "你没有将任务移入该项目的权限" }, { status: 403 });
       const project = await prisma.project.findFirst({
         where: { id: input.projectId, workspaceId: workspace.id },
         select: { id: true },
@@ -176,6 +184,10 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     });
     if (!existing) {
       return NextResponse.json({ error: "待办不存在" }, { status: 404 });
+    }
+    if (existing.projectId) {
+      const access = await getProjectAccess(existing.projectId, workspace.id, user.id, role);
+      if (!access.canWrite) return NextResponse.json({ error: "你没有删除该项目任务的权限" }, { status: 403 });
     }
 
     await prisma.todo.update({
