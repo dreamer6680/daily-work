@@ -549,7 +549,7 @@ export default function Home() {
 
         <WorkspaceControls />
         <nav className="space-y-1">
-          <NavItem icon={Inbox} label="全部任务" active={activeView === "tasks"} onClick={() => setActiveView("tasks")} />
+          <NavItem icon={Inbox} label="全部任务" onClick={() => setActiveView("tasks")} />
           <NavItem icon={CalendarDays} label="今日待办" active={activeView === "tasks"} onClick={() => setActiveView("tasks")} />
           <NavItem icon={Users} label="我负责的" onClick={() => { setAssigneeFilter("ALL"); setActiveView("tasks"); }} />
           <NavItem icon={Clock3} label="最近更新" onClick={() => setActiveView("tasks")} />
