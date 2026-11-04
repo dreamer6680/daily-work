@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
           ...fields,
           resolvedAt: input.status === BlockerStatus.RESOLVED
             ? existing.resolvedAt ?? new Date()
-            : input.status && [BlockerStatus.OPEN, BlockerStatus.INVESTIGATING, BlockerStatus.WAITING].includes(input.status)
+            : (input.status === BlockerStatus.OPEN || input.status === BlockerStatus.INVESTIGATING || input.status === BlockerStatus.WAITING)
               ? null
               : undefined,
         },
