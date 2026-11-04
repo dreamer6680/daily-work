@@ -3,6 +3,7 @@ import { ProgressEventType } from "@prisma/client";
 import { z } from "zod";
 import { getDemoContext } from "@/lib/demo-context";
 import { prisma } from "@/lib/prisma";
+import { getProjectAccess } from "@/lib/project-access";
 
 export const runtime = "nodejs";
 
@@ -31,10 +32,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (role === "VIEWER") return NextResponse.json({ error: "只读成员不能更新进展" }, { status: 403 });
     const existing = await prisma.todo.findFirst({
       where: { id, workspaceId: workspace.id, deletedAt: null },
-      select: { id: true, status: true },
+      select: { id: true, status: true, projectId: true },
     });
     if (!existing) {
       return NextResponse.json({ error: "待办不存在" }, { status: 404 });
+    }
+    if (existing.projectId) {
+      const access = await getProjectAccess(existing.projectId, workspace.id, user.id, role);
+      if (!access.canWrite) return NextResponse.json({ error: "你没有更新该项目任务进展的权限" }, { status: 403 });
     }
 
     const progressTitle = parsed.data.progressTitle?.trim() || null;
