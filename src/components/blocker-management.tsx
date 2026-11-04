@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, Plus, RefreshCw, Send, ShieldAlert, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Plus, RefreshCw, Search, Send, ShieldAlert, X } from "lucide-react";
 
 type Member = { id: string; name: string | null; email: string | null };
 type Todo = { id: string; title: string; status: string };
@@ -54,6 +54,7 @@ export default function BlockerManagement({ members, todos, readOnly }: { member
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | Status>("ALL");
   const [severityFilter, setSeverityFilter] = useState<"ALL" | Severity>("ALL");
+  const [keyword, setKeyword] = useState("");
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Blocker | null>(null);
@@ -79,10 +80,15 @@ export default function BlockerManagement({ members, todos, readOnly }: { member
 
   useEffect(() => { void load(); }, [load]);
 
-  const visible = useMemo(() => items.filter((item) =>
-    (statusFilter === "ALL" || item.status === statusFilter) &&
-    (severityFilter === "ALL" || item.severity === severityFilter)
-  ), [items, statusFilter, severityFilter]);
+  const visible = useMemo(() => {
+    const query = keyword.trim().toLowerCase();
+    return items.filter((item) =>
+      (statusFilter === "ALL" || item.status === statusFilter) &&
+      (severityFilter === "ALL" || item.severity === severityFilter) &&
+      (!query || [item.title, item.description, item.cause, item.impact, item.owner?.name, item.owner?.email]
+        .some((value) => value?.toLowerCase().includes(query)))
+    );
+  }, [items, statusFilter, severityFilter, keyword]);
 
   const counts = useMemo(() => ({
     active: items.filter((item) => !["RESOLVED", "CLOSED"].includes(item.status)).length,
@@ -183,7 +189,8 @@ export default function BlockerManagement({ members, todos, readOnly }: { member
       {error && <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <label className="relative"><Search size={14} className="absolute left-3 top-2.5 text-slate-400"/><input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索阻塞问题" className="h-9 w-52 rounded-md border border-slate-200 pl-8 pr-3 text-sm outline-none focus:border-blue-400"/></label>
           <select aria-label="按状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "ALL" | Status)} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm">
             <option value="ALL">全部状态</option>{Object.entries(STATUS).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
           </select>
